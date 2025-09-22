@@ -1,39 +1,15 @@
-# 🎮 PyGuess
+Got it ✅ Here’s the README translated and adapted into English in the same style as PyGuess:
 
-**PyGuess** is a simple command-line number guessing game written in Python.  
-The program generates a random number between **1 and 100**, and the player must guess it.
+# 📚 CodVeda Internship
 
----
-
-## 🚀 Features
-- Random number generation between 1–100  
-- Feedback on guesses (too high / too low)  
-- Attempt counter  
-- Difficulty levels  
-- Replay option  
-- Modular code structure  
-- Unit tests with `pytest`  
+**CodVeda Internship** is a repository dedicated to tracking and developing the projects completed during my **internship at CodVeda**.  
+All challenges, activities, and practical projects will be versioned, organized, and updated here. 🚀
 
 ---
 
-## 🛠️ Requirements
-- Python **3.x**  
-- No external libraries required  
-
----
-
-## ▶️ How to Play
-1. When the game starts, you are welcomed and prompted for your guess.  
-2. Enter an integer between **1 and 100**.  
-3. The game continues until you guess the correct number.  
-4. A success message is displayed when you win.  
-
----
-
-## 💻 Running the Game
-Clone or download the repository and navigate to the project directory:
-
-```bash
-git clone git@github.com:DevThiCosta/codveda-internship.git
-cd codveda-internship/pyguess
-python3 -m pyguess.game
+## 🚀 Goals
+- Centralize all internship projects  
+- Keep versioning clean and organized  
+- Showcase continuous learning progress  
+- Build a practical portfolio of exercises and projects
+  
