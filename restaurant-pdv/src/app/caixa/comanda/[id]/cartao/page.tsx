@@ -26,14 +26,20 @@ export default async function CardTerminalPage({
     );
   }
 
-  const { total } = await getComandaTotal(id);
+  const { total, amountDue } = await getComandaTotal(id);
   const confirm = closeComandaWithCardTerminal.bind(null, id);
 
   return (
     <div className="space-y-4">
       <BackLink comandaId={id} />
       <h1 className="text-lg font-semibold">{comanda.mesa.label} — Cartão</h1>
-      <p className="text-2xl font-semibold">R$ {total.toFixed(2)}</p>
+      <p className="text-2xl font-semibold">R$ {amountDue.toFixed(2)}</p>
+      {amountDue !== total && (
+        <p className="text-xs text-neutral-500">
+          Total da comanda: R$ {total.toFixed(2)} · já pago: R${" "}
+          {(total - amountDue).toFixed(2)}
+        </p>
+      )}
 
       <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
         <p className="mb-1 font-medium">Como cobrar:</p>

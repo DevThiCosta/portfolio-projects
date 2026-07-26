@@ -13,22 +13,43 @@ function toCents(amount: number) {
   return Math.round(amount * 100);
 }
 
+function centsToAmount(cents: number) {
+  return cents / 100;
+}
+
 function computeTotal(items: { unitPriceAtOrder: Prisma.Decimal | number; quantity: number }[]) {
   const cents = items.reduce(
     (sum, i) => sum + toCents(Number(i.unitPriceAtOrder)) * i.quantity,
     0
   );
-  return cents / 100;
+  return centsToAmount(cents);
 }
 
-async function getComandaTotal(comandaId: string) {
+/**
+ * Total da comanda, quanto já foi pago (pagamentos CONFIRMED) e quanto ainda
+ * falta cobrar. `amountDue` é o que o caixa deve efetivamente pedir/validar
+ * — importa quando já existe um pagamento parcial (ex: Pix confirmado, mas
+ * itens foram adicionados depois e a comanda continua aberta pra cobrar a
+ * diferença).
+ */
+async function getComandaBalance(comandaId: string) {
   const comanda = await prisma.comanda.findUniqueOrThrow({
     where: { id: comandaId },
     include: {
       items: { where: { status: { not: "CANCELLED" } }, orderBy: { createdAt: "asc" } },
+      payments: { where: { status: "CONFIRMED" } },
     },
   });
-  return { comanda, total: computeTotal(comanda.items) };
+  const totalCents = toCents(computeTotal(comanda.items));
+  const paidCents = comanda.payments.reduce((sum, p) => sum + toCents(Number(p.amount)), 0);
+  const amountDue = centsToAmount(Math.max(0, totalCents - paidCents));
+  return { comanda, total: centsToAmount(totalCents), amountDue };
+}
+
+/** Mantido para a tela do cartão, que só precisa do total/saldo — mesma lógica de getComandaBalance. */
+async function getComandaTotal(comandaId: string) {
+  const { comanda, total, amountDue } = await getComandaBalance(comandaId);
+  return { comanda, total, amountDue };
 }
 
 /** Envia à cozinha qualquer item ainda PENDING antes de fechar — um pedido pago nunca deve deixar de chegar à cozinha. */
@@ -65,31 +86,7 @@ async function flushPendingItemsToKitchen(tx: Prisma.TransactionClient, comandaI
   });
 }
 
-/**
- * Baixa de estoque + fechamento da comanda — chamado depois que o pagamento
- * total já está confirmado.
- *
- * Idempotente e concorrência-segura: o `updateMany` condicional
- * (`WHERE status = 'OPEN'`) é a guarda atômica — se outra transação já
- * fechou a comanda entre a leitura e a escrita (ex: caixa fecha em dinheiro
- * no mesmo instante em que um webhook de Pix atrasado chega), o `count`
- * retorna 0 e nada mais é feito. Isso cobre tanto o caso sequencial (Pix
- * confirmado bem depois de a comanda já ter fechado por outro meio) quanto
- * a corrida concorrente de verdade — o `UPDATE` do Postgres serializa as
- * duas transações.
- */
-async function closeComandaAndDecrementStock(
-  tx: Prisma.TransactionClient,
-  comandaId: string
-) {
-  await flushPendingItemsToKitchen(tx, comandaId);
-
-  const claimed = await tx.comanda.updateMany({
-    where: { id: comandaId, status: "OPEN" },
-    data: { status: "CLOSED", closedAt: new Date() },
-  });
-  if (claimed.count === 0) return;
-
+async function decrementStockForComanda(tx: Prisma.TransactionClient, comandaId: string) {
   const items = await tx.comandaItem.findMany({
     where: { comandaId, status: { not: "CANCELLED" } },
     include: { product: true },
@@ -110,6 +107,24 @@ async function closeComandaAndDecrementStock(
       data: { stock: { decrement: item.quantity } },
     });
   }
+}
+
+/**
+ * Tenta reivindicar o fechamento da comanda de forma atômica: só quem
+ * conseguir esse `UPDATE ... WHERE status = 'OPEN'` é quem realmente fecha.
+ * Precisa rodar ANTES de criar qualquer `Payment`, nunca depois — se
+ * corresse depois, duas tentativas concorrentes de fechar a mesma comanda
+ * (ex: caixa clica duas vezes, ou dois meios de pagamento fecham ao mesmo
+ * tempo) já teriam criado dois registros de pagamento antes de qualquer uma
+ * delas descobrir que perdeu a corrida, já que tudo roda na mesma transação
+ * e um `return` antecipado não desfaz o que já rodou antes dele.
+ */
+async function claimOpenComanda(tx: Prisma.TransactionClient, comandaId: string): Promise<boolean> {
+  const claimed = await tx.comanda.updateMany({
+    where: { id: comandaId, status: "OPEN" },
+    data: { status: "CLOSED", closedAt: new Date() },
+  });
+  return claimed.count > 0;
 }
 
 const CashSchema = z.object({
@@ -133,33 +148,42 @@ export async function closeComandaWithCash(
     return { error: "Valor inválido." };
   }
 
-  const { comanda, total } = await getComandaTotal(parsed.data.comandaId);
+  const { comanda, amountDue } = await getComandaBalance(parsed.data.comandaId);
   if (comanda.status !== "OPEN") {
     return { error: "Esta comanda já não está mais aberta." };
   }
-  if (toCents(parsed.data.amountReceived) < toCents(total)) {
-    return { error: "Valor recebido é menor que o total da comanda." };
+  if (toCents(parsed.data.amountReceived) < toCents(amountDue)) {
+    return { error: "Valor recebido é menor que o valor devido." };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.payment.create({
-      data: {
-        comandaId: comanda.id,
-        method: "DINHEIRO",
-        amount: total,
-        status: "CONFIRMED",
-        confirmedAt: new Date(),
-        receivedByUserId: session.userId,
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const claimed = await claimOpenComanda(tx, comanda.id);
+      if (!claimed) {
+        throw new Error("Esta comanda acabou de ser fechada por outra ação.");
+      }
+      await flushPendingItemsToKitchen(tx, comanda.id);
+      await tx.payment.create({
+        data: {
+          comandaId: comanda.id,
+          method: "DINHEIRO",
+          amount: amountDue,
+          status: "CONFIRMED",
+          confirmedAt: new Date(),
+          receivedByUserId: session.userId,
+        },
+      });
+      await decrementStockForComanda(tx, comanda.id);
     });
-    await closeComandaAndDecrementStock(tx, comanda.id);
-  });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao fechar comanda." };
+  }
 
   revalidatePath("/caixa");
   redirect("/caixa");
 }
 
-export { getComandaTotal, closeComandaAndDecrementStock };
+export { getComandaTotal };
 
 export async function createPixPaymentForComanda(comandaId: string) {
   const session = await requireRole(["CAIXA", "ADMIN"], "/login");
@@ -170,7 +194,7 @@ export async function createPixPaymentForComanda(comandaId: string) {
     );
   }
 
-  const { comanda, total } = await getComandaTotal(comandaId);
+  const { comanda, amountDue } = await getComandaBalance(comandaId);
   if (comanda.status !== "OPEN") {
     throw new Error("Esta comanda já não está mais aberta.");
   }
@@ -183,7 +207,7 @@ export async function createPixPaymentForComanda(comandaId: string) {
   const appUrl = process.env.APP_URL;
   const charge = await createPixCharge({
     comandaId,
-    amount: total,
+    amount: amountDue,
     description: `Bar POS — ${comanda.mesaId}`,
     notificationUrl: appUrl ? `${appUrl}/api/webhooks/mercadopago` : undefined,
   });
@@ -192,7 +216,7 @@ export async function createPixPaymentForComanda(comandaId: string) {
     data: {
       comandaId,
       method: "PIX",
-      amount: total,
+      amount: amountDue,
       status: "PENDING",
       gatewayPaymentId: charge.paymentId,
       gatewayQrCode: JSON.stringify({
@@ -230,15 +254,20 @@ export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
   if (status !== "approved") return status;
 
   await prisma.$transaction(async (tx) => {
+    // A confirmação em si (o dinheiro chegou de verdade) é sempre gravada,
+    // mesmo que a comanda não possa mais ser fechada agora — ver checagens
+    // abaixo. `payment.status !== "PENDING"` no topo desta função já
+    // impede que isso rode duas vezes para o mesmo pagamento.
     await tx.payment.update({
       where: { id: payment.id },
       data: { status: "CONFIRMED", confirmedAt: new Date() },
     });
 
     // A cobrança Pix trava o valor no momento em que foi gerada. Se itens
-    // foram adicionados à comanda depois disso (e ela continua aberta),
-    // fechar agora faria a casa perder a diferença — em vez disso, deixa a
-    // comanda aberta pra o caixa cobrar o restante por outro meio.
+    // foram adicionados à comanda depois disso, fechar agora faria a casa
+    // perder a diferença — em vez disso, deixa a comanda aberta pra o caixa
+    // cobrar o restante por outro meio (getComandaBalance já desconta esse
+    // Pix confirmado do saldo devedor).
     const currentItems = await tx.comandaItem.findMany({
       where: { comandaId: payment.comandaId, status: { not: "CANCELLED" } },
     });
@@ -247,7 +276,17 @@ export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
       return;
     }
 
-    await closeComandaAndDecrementStock(tx, payment.comandaId);
+    const claimed = await claimOpenComanda(tx, payment.comandaId);
+    if (!claimed) {
+      // Comanda já foi fechada por outro meio nesse meio-tempo. O Pix acima
+      // de qualquer forma já ficou CONFIRMED — é um pagamento real recebido
+      // que precisa de reconciliação manual (provavelmente reembolso), não
+      // algo que o software deveria tentar "desfazer" ou esconder.
+      return;
+    }
+
+    await flushPendingItemsToKitchen(tx, payment.comandaId);
+    await decrementStockForComanda(tx, payment.comandaId);
   });
 
   return "approved";
@@ -262,23 +301,28 @@ export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
 export async function closeComandaWithCardTerminal(comandaId: string) {
   const session = await requireRole(["CAIXA", "ADMIN"], "/login");
 
-  const { comanda, total } = await getComandaTotal(comandaId);
+  const { comanda, amountDue } = await getComandaBalance(comandaId);
   if (comanda.status !== "OPEN") {
     throw new Error("Esta comanda já não está mais aberta.");
   }
 
   await prisma.$transaction(async (tx) => {
+    const claimed = await claimOpenComanda(tx, comandaId);
+    if (!claimed) {
+      throw new Error("Esta comanda acabou de ser fechada por outra ação.");
+    }
+    await flushPendingItemsToKitchen(tx, comandaId);
     await tx.payment.create({
       data: {
         comandaId,
         method: "CARTAO_TERMINAL",
-        amount: total,
+        amount: amountDue,
         status: "CONFIRMED",
         confirmedAt: new Date(),
         receivedByUserId: session.userId,
       },
     });
-    await closeComandaAndDecrementStock(tx, comandaId);
+    await decrementStockForComanda(tx, comandaId);
   });
 
   revalidatePath("/caixa");
