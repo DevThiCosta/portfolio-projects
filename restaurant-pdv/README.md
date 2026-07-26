@@ -12,7 +12,7 @@ Order management for tables and counter sales, menu and pricing control, and dai
 
 ## 🛠️ Tech Stack
 
-Being built with AI-assisted development using Claude Code. Stack details will be added here as the architecture is defined.
+Native backend and database stack to be defined as development starts.
 
 ---
 
