@@ -37,6 +37,18 @@ export async function createMesa(
 
 export async function toggleMesaActive(mesaId: string, active: boolean) {
   await requireRole(["ADMIN"], "/admin/login");
+
+  if (!active) {
+    const openComanda = await prisma.comanda.findFirst({
+      where: { mesaId, status: "OPEN" },
+    });
+    if (openComanda) {
+      throw new Error(
+        "Esta mesa tem uma comanda aberta — feche a conta antes de desativá-la."
+      );
+    }
+  }
+
   await prisma.mesa.update({ where: { id: mesaId }, data: { active } });
   revalidatePath("/admin/mesas");
 }

@@ -51,6 +51,7 @@ function ProductRow({
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function handleAdd() {
     const fd = new FormData();
@@ -59,9 +60,14 @@ function ProductRow({
     fd.set("quantity", String(qty));
     if (notes.trim()) fd.set("notes", notes.trim());
     startTransition(async () => {
-      await addItemToComanda(fd);
-      setQty(1);
-      setNotes("");
+      setError(null);
+      try {
+        await addItemToComanda(fd);
+        setQty(1);
+        setNotes("");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Não consegui adicionar o item");
+      }
     });
   }
 
@@ -104,6 +110,7 @@ function ProductRow({
         placeholder="observação (opcional)"
         className="mt-2 w-full rounded-md border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs outline-none focus:border-neutral-600"
       />
+      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>
   );
 }
