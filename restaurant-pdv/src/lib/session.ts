@@ -16,6 +16,7 @@ export type SessionPayload = {
   userId: string;
   name: string;
   role: Role;
+  issuedAt: number;
   expiresAt: number;
 };
 
@@ -46,11 +47,13 @@ export async function createSession(user: {
   name: string;
   role: Role;
 }) {
-  const expiresAt = Date.now() + SESSION_DURATION_MS;
+  const issuedAt = Date.now();
+  const expiresAt = issuedAt + SESSION_DURATION_MS;
   const session = await encrypt({
     userId: user.id,
     name: user.name,
     role: user.role,
+    issuedAt,
     expiresAt,
   });
 

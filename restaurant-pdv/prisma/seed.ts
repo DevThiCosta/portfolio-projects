@@ -33,6 +33,32 @@ const PRODUCTS = [
   { name: "Filé com Fritas", category: "Pratos", price: 42.0, stock: null, lowStockThreshold: null },
 ];
 
+const INSUMOS = [
+  { name: "Cachaça", unit: "ml", stock: 5000, lowStockThreshold: 1000 },
+  { name: "Limão", unit: "un", stock: 100, lowStockThreshold: 20 },
+  { name: "Açúcar", unit: "g", stock: 3000, lowStockThreshold: 500 },
+  { name: "Batata congelada", unit: "g", stock: 8000, lowStockThreshold: 1500 },
+  { name: "Óleo de fritura", unit: "ml", stock: 4000, lowStockThreshold: 1000 },
+  { name: "Peito de frango", unit: "g", stock: 6000, lowStockThreshold: 1000 },
+];
+
+// Produtos compostos: quanto de cada insumo uma unidade vendida consome.
+const RECIPES: Record<string, { insumo: string; quantityPerUnit: number }[]> = {
+  Caipirinha: [
+    { insumo: "Cachaça", quantityPerUnit: 50 },
+    { insumo: "Limão", quantityPerUnit: 1 },
+    { insumo: "Açúcar", quantityPerUnit: 20 },
+  ],
+  "Porção de Batata Frita": [
+    { insumo: "Batata congelada", quantityPerUnit: 400 },
+    { insumo: "Óleo de fritura", quantityPerUnit: 50 },
+  ],
+  "Isca de Frango": [
+    { insumo: "Peito de frango", quantityPerUnit: 350 },
+    { insumo: "Óleo de fritura", quantityPerUnit: 50 },
+  ],
+};
+
 async function main() {
   const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
   await prisma.user.upsert({
@@ -73,6 +99,27 @@ async function main() {
     const existing = await prisma.product.findFirst({ where: { name: p.name } });
     if (!existing) {
       await prisma.product.create({ data: p });
+    }
+  }
+
+  const insumoIdByName = new Map<string, string>();
+  for (const insumo of INSUMOS) {
+    const existing = await prisma.insumo.findFirst({ where: { name: insumo.name } });
+    const record = existing ?? (await prisma.insumo.create({ data: insumo }));
+    insumoIdByName.set(insumo.name, record.id);
+  }
+
+  for (const [productName, ingredients] of Object.entries(RECIPES)) {
+    const product = await prisma.product.findFirst({ where: { name: productName } });
+    if (!product) continue;
+    for (const ing of ingredients) {
+      const insumoId = insumoIdByName.get(ing.insumo);
+      if (!insumoId) continue;
+      await prisma.productIngredient.upsert({
+        where: { productId_insumoId: { productId: product.id, insumoId } },
+        update: { quantityPerUnit: ing.quantityPerUnit },
+        create: { productId: product.id, insumoId, quantityPerUnit: ing.quantityPerUnit },
+      });
     }
   }
 

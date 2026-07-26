@@ -2,9 +2,11 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
+import { reserveStock, releaseStock } from "@/lib/stock";
 
 /** Abre uma comanda para a mesa, ou retorna a já aberta (idempotente). */
 export async function openComanda(mesaId: string) {
@@ -47,7 +49,7 @@ const AddItemSchema = z.object({
 });
 
 export async function addItemToComanda(formData: FormData) {
-  await requireRole(["GARCOM", "ADMIN"], "/login");
+  const session = await requireRole(["GARCOM", "ADMIN"], "/login");
 
   const parsed = AddItemSchema.parse({
     comandaId: formData.get("comandaId"),
@@ -65,21 +67,33 @@ export async function addItemToComanda(formData: FormData) {
     throw new Error("Comanda não está mais aberta.");
   }
 
-  await prisma.comandaItem.create({
-    data: {
-      comandaId: comanda.id,
-      productId: product.id,
-      quantity: parsed.quantity,
-      unitPriceAtOrder: product.price,
-      notes: parsed.notes,
-    },
+  // O estoque (do produto ou dos insumos da receita) é reservado agora, no
+  // pedido — não só no fechamento — pra impedir vender mais do que existe
+  // quando várias mesas pedem o mesmo item ao mesmo tempo.
+  await prisma.$transaction(async (tx) => {
+    await reserveStock(tx, product.id, parsed.quantity, {
+      relatedComandaId: comanda.id,
+      createdByUserId: session.userId,
+      reason: "venda",
+    });
+
+    await tx.comandaItem.create({
+      data: {
+        comandaId: comanda.id,
+        productId: product.id,
+        quantity: parsed.quantity,
+        unitPriceAtOrder: product.price,
+        notes: parsed.notes,
+        createdByUserId: session.userId,
+      },
+    });
   });
 
   revalidatePath(`/garcom/mesa/${comanda.mesaId}`);
 }
 
 export async function cancelPendingItem(itemId: string) {
-  await requireRole(["GARCOM", "ADMIN"], "/login");
+  const session = await requireRole(["GARCOM", "ADMIN"], "/login");
 
   const item = await prisma.comandaItem.findUniqueOrThrow({
     where: { id: itemId },
@@ -89,9 +103,16 @@ export async function cancelPendingItem(itemId: string) {
     throw new Error("Só é possível cancelar itens ainda não enviados à cozinha.");
   }
 
-  await prisma.comandaItem.update({
-    where: { id: itemId },
-    data: { status: "CANCELLED" },
+  await prisma.$transaction(async (tx) => {
+    await tx.comandaItem.update({
+      where: { id: itemId },
+      data: { status: "CANCELLED" },
+    });
+    await releaseStock(tx, item.productId, item.quantity, {
+      relatedComandaId: item.comandaId,
+      createdByUserId: session.userId,
+      reason: "item cancelado",
+    });
   });
 
   revalidatePath(`/garcom/mesa/${item.comanda.mesaId}`);
@@ -136,4 +157,5 @@ export async function sendToKitchen(comandaId: string) {
   });
 
   revalidatePath(`/garcom/mesa/${comanda.mesaId}`);
+  redirect("/garcom");
 }
