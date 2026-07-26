@@ -14,18 +14,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (secret) {
-    try {
-      WebhookSignatureValidator.validate({
-        xSignature: req.headers.get("x-signature"),
-        xRequestId: req.headers.get("x-request-id"),
-        dataId,
-        secret,
-        toleranceSeconds: 300,
-      });
-    } catch {
-      return NextResponse.json({ error: "invalid signature" }, { status: 401 });
-    }
+  // Falha fechado: sem o secret, não há como provar que a chamada veio do
+  // Mercado Pago, então a requisição é rejeitada em vez de processada sem
+  // verificação. Nunca trate "secret não configurado" como "pode confiar".
+  if (!secret) {
+    console.error(
+      "MERCADO_PAGO_WEBHOOK_SECRET não configurado — rejeitando notificação do webhook."
+    );
+    return NextResponse.json({ error: "webhook not configured" }, { status: 401 });
+  }
+
+  try {
+    WebhookSignatureValidator.validate({
+      xSignature: req.headers.get("x-signature"),
+      xRequestId: req.headers.get("x-request-id"),
+      dataId,
+      secret,
+      toleranceSeconds: 300,
+    });
+  } catch {
+    return NextResponse.json({ error: "invalid signature" }, { status: 401 });
   }
 
   try {

@@ -20,11 +20,24 @@ async function getComandaTotal(comandaId: string) {
   return { comanda, total };
 }
 
-/** Baixa de estoque + fechamento da comanda — chamado depois que o pagamento total já está confirmado. */
+/**
+ * Baixa de estoque + fechamento da comanda — chamado depois que o pagamento
+ * total já está confirmado.
+ *
+ * Idempotente por design: se a comanda já não estiver mais OPEN, não faz
+ * nada. Isso importa porque uma cobrança Pix pode ficar pendente depois que
+ * a comanda já foi fechada por outro meio (ex: cliente paga um QR code Pix
+ * antigo depois do caixa já ter fechado a conta em dinheiro) — sem essa
+ * checagem, a confirmação tardia baixaria o estoque uma segunda vez e
+ * duplicaria a receita nos relatórios.
+ */
 async function closeComandaAndDecrementStock(
   tx: Prisma.TransactionClient,
   comandaId: string
 ) {
+  const comanda = await tx.comanda.findUniqueOrThrow({ where: { id: comandaId } });
+  if (comanda.status !== "OPEN") return;
+
   const items = await tx.comandaItem.findMany({
     where: { comandaId, status: { not: "CANCELLED" } },
     include: { product: true },
