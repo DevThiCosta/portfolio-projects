@@ -1,0 +1,18 @@
+{
+  "name": "Bar POS",
+  "short_name": "Bar POS",
+  "description": "PDV para bares — comandas, cozinha e caixa em um só lugar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
