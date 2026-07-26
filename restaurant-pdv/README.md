@@ -1,4 +1,4 @@
-# 🍽️ Restaurant PDV
+# 🍽️ Restaurant PDV (Bar POS)
 
 A full-stack point-of-sale (POS) system built for a small neighborhood bar:
 the waiter takes orders from their phone, the kitchen gets a ticket printed
@@ -46,9 +46,30 @@ over "the most robust solution possible."
 
 ## 🛠️ Tech Stack
 
-Next.js 16 (App Router, TypeScript, Turbopack) · PostgreSQL + Prisma ·
-Tailwind CSS · JWT sessions (`jose`) · Mercado Pago (Pix) · Node.js print
-bridge with `node-thermal-printer` (ESC/POS)
+**Framework:** Next.js 16 (App Router, TypeScript, Turbopack).
+
+**Database:** PostgreSQL, accessed via Prisma (ORM).
+
+**Styling:** Tailwind CSS.
+
+**Authentication:** session via a JWT-signed cookie (using the `jose`
+library) — PIN login for waitstaff/cashier, username and password for the
+admin, with no external auth service.
+
+**Validation:** Zod.
+
+**Password/PIN hashing:** bcryptjs.
+
+**Payments:** Mercado Pago — Pix via API with QR code and a confirmation
+webhook; card payments go through a separate physical terminal (e.g. Point
+Smart).
+
+**Kitchen printing:** a separate Node.js service (`print-bridge`) running
+locally at the bar (Raspberry Pi or mini PC), which fetches orders from the
+cloud and sends them to a thermal printer via the ESC/POS protocol.
+
+**Hosting:** Railway (or Render as an alternative), bundling the web app
+and a managed Postgres instance into a single bill.
 
 ---
 
@@ -85,6 +106,14 @@ reusing the whole backend and frontend, no rewrite.
 the (future) QR-code self-ordering feature a clean addition later, instead
 of a rework: a customer scanning a code at their table would just be adding
 to the same order a waiter could also be building.
+
+---
+
+## 🤖 AI-Assisted QA & Security
+
+Claude Code is used on this project as a QA and security tester, reviewing
+code for bugs and vulnerabilities, and commits are also handled through the
+assistant.
 
 ---
 
