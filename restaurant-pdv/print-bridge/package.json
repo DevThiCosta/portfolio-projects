@@ -1,0 +1,20 @@
+{
+  "name": "bar-pos-print-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serviço local que busca pedidos pendentes na nuvem e imprime na impressora térmica da cozinha.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-thermal-printer": "^4.4.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}
