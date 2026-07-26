@@ -4,64 +4,42 @@
 ![C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
 ![Ruby](https://img.shields.io/badge/Ruby-CC342D?logo=ruby&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Git](https://img.shields.io/badge/Git-F05032?logo=git&logoColor=white)
-![VSCode](https://img.shields.io/badge/VS%20Code-0078D4?logo=visualstudiocode&logoColor=white)
+![VSCode](https://img.shields.io/badge/VS%20Code-007ACC?logo=visualstudiocode&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
 
-Welcome to my **Portfolio & Study Repository**!  
-This repo is where I organize, document, and showcase my journey as a developer — from study exercises to complete projects.  
+Welcome to my **Portfolio & Study Repository**!
+This repo is where I organize, document, and showcase my journey as a developer — from study exercises to complete projects.
 
 ---
 
 ## 🚀 About
-This repository serves as:  
-- A **portfolio hub** with all my projects in one place  
-- A **study log** to track progress and learning milestones  
-- A growing **showcase of practical skills** in development  
 
-🧠 Graduated from the **Le Wagon Full-Stack Web Development Bootcamp**, where I strengthened my foundation in **Ruby on Rails**, **JavaScript**, and **project-based learning**.  
+This repository works as a study log: a place to track what I've already finished, what I'm actively building, and what I'm exploring next. My two main bootcamp projects, TravelShield and Middle, live in a separate hub: [lewagon-projects](https://github.com/DevThiCosta/lewagon-projects).
+
+🧠 Graduated from the Le Wagon Full-Stack Web Development Bootcamp, where I built a strong foundation in Ruby on Rails, JavaScript, and project-based learning.
 
 ---
 
 ## 🛠️ Tech Stack
-I’m continuously exploring and building with:  
 
-- **Languages:** Python, C, JavaScript, Ruby  
-- **Tools & Platforms:** Git, GitHub, VS Code, Linux/WSL  
-- **Learning Focus:** Algorithms, Data Structures, Web Development, Software Engineering
+Languages: Python, Ruby, JavaScript, TypeScript, C. Tools & Platforms: Git, GitHub, VS Code, Linux/WSL. Areas of focus: algorithms and data structures, web development, cybersecurity fundamentals, and software engineering practices.
 
 ---
 
 ## 📈 Progress Tracking
 
-✅ **Completed Projects:**  
-- 🎮 [PyGuess](https://github.com/DevThiCosta/study-lab/tree/master/pyguess)  
-  *A simple and fun command-line number guessing game built with Python.*  
-  - Random number generation between 1–100  
-  - Difficulty levels and feedback system  
-  - Modular structure with replay option  
-  - Includes unit tests with `pytest`  
+✅ **Completed:** 🎮 [PyGuess](./pyguess) — a command-line number guessing game built in Python, with difficulty levels and unit tests using pytest.
 
----
+🟡 **In progress:** 🚘 [Auto Estética App](./auto-estetica-app) — a native Android app for a car detailing business: clients can schedule appointments, leave reviews, see photos of completed services, and find contact info, while the owner manages product inventory and sales reports. 🤖 Also building an application with AI-assisted development (Claude Code) — details coming soon.
 
-🟡 **Ongoing Projects:**  
-- 💻 **Le Wagon Portfolio Projects** – Refining and extending apps built during the bootcamp using **Ruby on Rails** and **JavaScript**  
-- ⚙️ **CS50 Exercises & C Projects** – Solving algorithmic challenges and building programs in **C** to deepen understanding of memory, logic, and data structures  
-- 🌍 **Flask Practice Series** – Building small **Python web apps** to strengthen backend logic and API handling  
-
----
-
-🔜 **Future Projects:**  
-- 🧩 **Ruby on Rails SaaS App** – A complete SaaS platform with user authentication, subscriptions, and dashboard analytics  
-- 🤖 **AI-Powered CLI Tool (Python)** – Command-line tool integrating OpenAI API for developer productivity  
-- 🕹️ **C Game Engine Basics** – Exploring low-level programming and building a simple 2D engine in **C**  
+🔜 **Exploring next:** CS50 exercises and C projects to deepen my understanding of algorithms and low-level programming, plus continued study of cybersecurity fundamentals.
 
 ---
 
 ## 🌐 Connect with Me
-- [GitHub](https://github.com/DevThiCosta)  
-- [LinkedIn](https://www.linkedin.com/in/devthicosta/)  
 
----
+[GitHub](https://github.com/DevThiCosta/) · [LinkedIn](https://www.linkedin.com/in/devthicosta/)
 
-✨ _This repository is a living portfolio that grows as I do._
+✨ This repository is a living portfolio that grows as I study and build.
