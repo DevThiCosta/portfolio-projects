@@ -11,6 +11,14 @@ const METHOD_LABEL: Record<string, string> = {
 
 export default async function CaixaPage() {
   const session = await verifySession();
+  // Sessões antigas (de antes do campo `issuedAt` existir no token) não têm
+  // esse valor — sem isso, `new Date(undefined)` vira uma data inválida e
+  // quebraria a consulta. Nesse caso, começa o histórico vazio (a partir de
+  // agora) em vez de derrubar a página.
+  const sessionIssuedAt =
+    session?.issuedAt && Number.isFinite(session.issuedAt)
+      ? new Date(session.issuedAt)
+      : new Date();
 
   const [comandas, closedThisSession] = await Promise.all([
     prisma.comanda.findMany({
@@ -23,7 +31,7 @@ export default async function CaixaPage() {
     }),
     session
       ? prisma.comanda.findMany({
-          where: { status: "CLOSED", closedAt: { gte: new Date(session.issuedAt) } },
+          where: { status: "CLOSED", closedAt: { gte: sessionIssuedAt } },
           include: {
             mesa: true,
             payments: { where: { status: "CONFIRMED" } },
