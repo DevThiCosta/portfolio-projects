@@ -32,7 +32,7 @@ Languages: Python, Ruby, JavaScript, TypeScript, C. Tools & Platforms: Git, GitH
 
 ✅ **Completed:** 🎮 [PyGuess](./pyguess) — a command-line number guessing game built in Python, with difficulty levels and unit tests using pytest.
 
-🟡 **In progress:** 🚘 [Auto Estética App](./auto-estetica-app) — a native Android app for a car detailing business: clients can schedule appointments, leave reviews, see photos of completed services, and find contact info, while the owner manages product inventory and sales reports. 🤖 Also building an application with AI-assisted development (Claude Code) — details coming soon.
+🟡 **In progress:** 🚘 [Auto Estética App](./auto-estetica-app) — a native Android app for a car detailing business: clients can schedule appointments, leave reviews, see photos of completed services, and find contact info, while the owner manages product inventory and sales reports. 🍽️ [Restaurant PDV](./restaurant-pdv) — a point-of-sale system for small and medium-sized restaurants, built with AI-assisted development (Claude Code) to run on a local server.
 
 🔜 **Exploring next:** CS50 exercises and C projects to deepen my understanding of algorithms and low-level programming, plus continued study of cybersecurity fundamentals.
 
