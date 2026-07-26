@@ -1,0 +1,179 @@
+// Bar POS — schema de dados
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CAIXA
+  GARCOM
+}
+
+enum ComandaStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum ComandaSource {
+  STAFF
+  QR
+}
+
+enum ComandaItemStatus {
+  PENDING
+  SENT_TO_KITCHEN
+  PREPARING
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  DINHEIRO
+  PIX
+  CARTAO_TERMINAL
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+enum PrintJobStatus {
+  PENDING
+  PRINTED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  role         Role
+  pinHash      String? // garcom/caixa: login rapido por PIN
+  username     String?  @unique // admin: login usuario+senha
+  passwordHash String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  comandasOpened      Comanda[]        @relation("ComandaOpenedBy")
+  comandaItemsCreated ComandaItem[]    @relation("ComandaItemCreatedBy")
+  paymentsReceived    Payment[]        @relation("PaymentReceivedBy")
+  stockMovements      StockMovement[]  @relation("StockMovementCreatedBy")
+
+  @@index([role])
+}
+
+model Mesa {
+  id       String    @id @default(cuid())
+  label    String    @unique
+  active   Boolean   @default(true)
+  qrToken  String?   @unique // Fase 2: pedido do cliente via QR code
+  comandas Comanda[]
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  name              String
+  category          String
+  price             Decimal  @db.Decimal(10, 2)
+  stock             Int? // null = nao rastreado
+  lowStockThreshold Int?
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  comandaItems   ComandaItem[]
+  stockMovements StockMovement[]
+
+  @@index([active, category])
+}
+
+model Comanda {
+  id           String        @id @default(cuid())
+  mesa         Mesa          @relation(fields: [mesaId], references: [id])
+  mesaId       String
+  status       ComandaStatus @default(OPEN)
+  source       ComandaSource @default(STAFF)
+  openedBy     User          @relation("ComandaOpenedBy", fields: [openedByUserId], references: [id])
+  openedByUserId String
+  openedAt     DateTime      @default(now())
+  closedAt     DateTime?
+
+  items    ComandaItem[]
+  payments Payment[]
+  printJobs PrintJob[]
+
+  // No maximo uma comanda OPEN por mesa por vez, garantido em app-level
+  // (checagem + transacao) - ver app/lib/comandas.ts
+  @@index([mesaId, status])
+}
+
+model ComandaItem {
+  id              String            @id @default(cuid())
+  comanda         Comanda           @relation(fields: [comandaId], references: [id])
+  comandaId       String
+  product         Product           @relation(fields: [productId], references: [id])
+  productId       String
+  quantity        Int
+  unitPriceAtOrder Decimal          @db.Decimal(10, 2)
+  notes           String?
+  status          ComandaItemStatus @default(PENDING)
+  createdBy       User?             @relation("ComandaItemCreatedBy", fields: [createdByUserId], references: [id])
+  createdByUserId String?
+  createdAt       DateTime          @default(now())
+
+  @@index([comandaId, status])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  comanda          Comanda       @relation(fields: [comandaId], references: [id])
+  comandaId        String
+  method           PaymentMethod
+  amount           Decimal       @db.Decimal(10, 2)
+  status           PaymentStatus @default(PENDING)
+  gatewayPaymentId String? // id da cobranca no gateway (Mercado Pago)
+  gatewayQrCode    String?       @db.Text // payload do QR Pix, exibido em tela
+  receivedBy       User?         @relation("PaymentReceivedBy", fields: [receivedByUserId], references: [id])
+  receivedByUserId String?
+  createdAt        DateTime      @default(now())
+  confirmedAt      DateTime?
+
+  @@index([comandaId])
+  @@index([gatewayPaymentId])
+}
+
+model PrintJob {
+  id           String         @id @default(cuid())
+  comanda      Comanda        @relation(fields: [comandaId], references: [id])
+  comandaId    String
+  payload      Json // snapshot: mesa, itens, hora
+  status       PrintJobStatus @default(PENDING)
+  attempts     Int            @default(0)
+  errorMessage String?
+  createdAt    DateTime       @default(now())
+  printedAt    DateTime?
+
+  @@index([status])
+}
+
+model StockMovement {
+  id                String   @id @default(cuid())
+  product           Product  @relation(fields: [productId], references: [id])
+  productId         String
+  delta             Int // negativo = saida, positivo = entrada
+  reason            String // ex: "venda", "reposicao", "perda"
+  relatedComandaId  String?
+  createdBy         User?    @relation("StockMovementCreatedBy", fields: [createdByUserId], references: [id])
+  createdByUserId   String?
+  createdAt         DateTime @default(now())
+
+  @@index([productId])
+}
