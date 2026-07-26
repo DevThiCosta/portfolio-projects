@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { openComandaFormAction, sendToKitchen } from "@/app/actions/comandas";
+import { computeAvailability } from "@/lib/stock";
 import { AddItemPicker } from "./add-item-picker";
 import { ComandaItemsList } from "./comanda-items-list";
 import { SendToKitchenButton } from "./send-to-kitchen-button";
@@ -49,6 +50,7 @@ export default async function MesaComandaPage({
 
   const products = await prisma.product.findMany({
     where: { active: true },
+    include: { ingredients: { include: { insumo: true } } },
     orderBy: [{ category: "asc" }, { name: "asc" }],
   });
 
@@ -68,12 +70,16 @@ export default async function MesaComandaPage({
     0
   );
 
-  const productsForClient = products.map((p) => ({
-    id: p.id,
-    name: p.name,
-    category: p.category,
-    price: Number(p.price),
-  }));
+  const productsForClient = products.map((p) => {
+    const availability = computeAvailability(p);
+    return {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      price: Number(p.price),
+      available: availability.quantity,
+    };
+  });
 
   const sendToKitchenForComanda = sendToKitchen.bind(null, comanda.id);
 

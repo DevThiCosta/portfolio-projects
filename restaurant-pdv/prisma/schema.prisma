@@ -67,6 +67,7 @@ model User {
   comandaItemsCreated ComandaItem[]    @relation("ComandaItemCreatedBy")
   paymentsReceived    Payment[]        @relation("PaymentReceivedBy")
   stockMovements      StockMovement[]  @relation("StockMovementCreatedBy")
+  insumoMovements     InsumoMovement[] @relation("InsumoMovementCreatedBy")
 
   @@index([role])
 }
@@ -84,15 +85,63 @@ model Product {
   name              String
   category          String
   price             Decimal  @db.Decimal(10, 2)
-  stock             Int? // null = nao rastreado
+  stock             Int? // null = nao rastreado; ignorado se o produto tiver receita (ingredients)
   lowStockThreshold Int?
   active            Boolean  @default(true)
   createdAt         DateTime @default(now())
 
   comandaItems   ComandaItem[]
   stockMovements StockMovement[]
+  // Se tiver 1+ linhas aqui, o produto e "composto": disponibilidade e
+  // decontada dos insumos da receita, e o campo `stock` acima e ignorado.
+  ingredients    ProductIngredient[]
 
   @@index([active, category])
+}
+
+/// Insumo/ingrediente cru (cachaca, limao, batata, etc.) usado nas receitas
+/// de produtos compostos (caipirinha, porcoes de comida...).
+model Insumo {
+  id                String   @id @default(cuid())
+  name              String
+  unit              String // rotulo livre: "ml", "g", "un" — sem conversao, so exibicao
+  stock             Decimal  @db.Decimal(10, 3)
+  lowStockThreshold Decimal? @db.Decimal(10, 3)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  usedIn    ProductIngredient[]
+  movements InsumoMovement[]
+
+  @@index([active])
+}
+
+/// Uma linha de receita: "para vender 1 unidade de `product`, consome
+/// `quantityPerUnit` de `insumo`".
+model ProductIngredient {
+  id              String  @id @default(cuid())
+  product         Product @relation(fields: [productId], references: [id])
+  productId       String
+  insumo          Insumo  @relation(fields: [insumoId], references: [id])
+  insumoId        String
+  quantityPerUnit Decimal @db.Decimal(10, 3)
+
+  @@unique([productId, insumoId])
+  @@index([productId])
+}
+
+model InsumoMovement {
+  id                String   @id @default(cuid())
+  insumo            Insumo   @relation(fields: [insumoId], references: [id])
+  insumoId          String
+  delta             Decimal  @db.Decimal(10, 3) // negativo = saida, positivo = entrada
+  reason            String // ex: "venda", "reposicao", "perda"
+  relatedComandaId  String?
+  createdBy         User?    @relation("InsumoMovementCreatedBy", fields: [createdByUserId], references: [id])
+  createdByUserId   String?
+  createdAt         DateTime @default(now())
+
+  @@index([insumoId])
 }
 
 model Comanda {

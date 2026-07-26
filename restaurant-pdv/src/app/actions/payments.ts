@@ -86,29 +86,6 @@ async function flushPendingItemsToKitchen(tx: Prisma.TransactionClient, comandaI
   });
 }
 
-async function decrementStockForComanda(tx: Prisma.TransactionClient, comandaId: string) {
-  const items = await tx.comandaItem.findMany({
-    where: { comandaId, status: { not: "CANCELLED" } },
-    include: { product: true },
-  });
-
-  for (const item of items) {
-    if (item.product.stock === null) continue;
-    await tx.stockMovement.create({
-      data: {
-        productId: item.productId,
-        delta: -item.quantity,
-        reason: "venda",
-        relatedComandaId: comandaId,
-      },
-    });
-    await tx.product.update({
-      where: { id: item.productId },
-      data: { stock: { decrement: item.quantity } },
-    });
-  }
-}
-
 /**
  * Tenta reivindicar o fechamento da comanda de forma atômica: só quem
  * conseguir esse `UPDATE ... WHERE status = 'OPEN'` é quem realmente fecha.
@@ -173,7 +150,8 @@ export async function closeComandaWithCash(
           receivedByUserId: session.userId,
         },
       });
-      await decrementStockForComanda(tx, comanda.id);
+      // Estoque já foi reservado quando os itens foram pedidos (ver
+      // src/lib/stock.ts) — não há baixa a fazer aqui no fechamento.
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Erro ao fechar comanda." };
@@ -286,7 +264,6 @@ export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
     }
 
     await flushPendingItemsToKitchen(tx, payment.comandaId);
-    await decrementStockForComanda(tx, payment.comandaId);
   });
 
   return "approved";
@@ -322,7 +299,6 @@ export async function closeComandaWithCardTerminal(comandaId: string) {
         receivedByUserId: session.userId,
       },
     });
-    await decrementStockForComanda(tx, comandaId);
   });
 
   revalidatePath("/caixa");

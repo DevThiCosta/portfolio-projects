@@ -13,7 +13,7 @@ export default async function GarcomMesasPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-semibold">Mesas</h1>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
         {mesas.map((mesa) => {
           const ocupada = mesa.comandas.length > 0;
           return (
@@ -34,7 +34,7 @@ export default async function GarcomMesasPage() {
           );
         })}
         {mesas.length === 0 && (
-          <p className="col-span-3 text-sm text-neutral-500">
+          <p className="col-span-3 text-sm text-neutral-500 sm:col-span-4 md:col-span-6 lg:col-span-8">
             Nenhuma mesa cadastrada. Peça ao admin para cadastrar em
             /admin/mesas.
           </p>

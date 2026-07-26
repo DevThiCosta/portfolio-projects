@@ -11,7 +11,7 @@ export default async function CaixaLayout({
   return (
     <div className="min-h-dvh bg-neutral-950 text-neutral-50">
       <StaffHeader name={session.name} roleLabel="Caixa" />
-      <main className="mx-auto max-w-lg px-4 py-4">{children}</main>
+      <main className="mx-auto w-full max-w-4xl px-4 py-4">{children}</main>
     </div>
   );
 }

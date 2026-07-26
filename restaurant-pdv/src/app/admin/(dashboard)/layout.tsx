@@ -4,6 +4,7 @@ import { StaffHeader } from "@/components/staff-header";
 const NAV = [
   { href: "/admin", label: "Início" },
   { href: "/admin/produtos", label: "Produtos" },
+  { href: "/admin/insumos", label: "Insumos" },
   { href: "/admin/mesas", label: "Mesas" },
   { href: "/admin/estoque", label: "Estoque" },
   { href: "/admin/relatorios", label: "Relatórios" },
