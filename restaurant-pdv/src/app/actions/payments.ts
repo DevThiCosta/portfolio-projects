@@ -8,35 +8,87 @@ import { requireRole } from "@/lib/dal";
 import type { Prisma } from "@/generated/prisma/client";
 import { createPixCharge, getPixPaymentStatus, isPixConfigured } from "@/lib/mercadopago";
 
+/** Evita comparações de ponto flutuante em dinheiro — tudo em centavos inteiros. */
+function toCents(amount: number) {
+  return Math.round(amount * 100);
+}
+
+function computeTotal(items: { unitPriceAtOrder: Prisma.Decimal | number; quantity: number }[]) {
+  const cents = items.reduce(
+    (sum, i) => sum + toCents(Number(i.unitPriceAtOrder)) * i.quantity,
+    0
+  );
+  return cents / 100;
+}
+
 async function getComandaTotal(comandaId: string) {
   const comanda = await prisma.comanda.findUniqueOrThrow({
     where: { id: comandaId },
-    include: { items: { where: { status: { not: "CANCELLED" } } } },
+    include: {
+      items: { where: { status: { not: "CANCELLED" } }, orderBy: { createdAt: "asc" } },
+    },
   });
-  const total = comanda.items.reduce(
-    (sum, i) => sum + Number(i.unitPriceAtOrder) * i.quantity,
-    0
-  );
-  return { comanda, total };
+  return { comanda, total: computeTotal(comanda.items) };
+}
+
+/** Envia à cozinha qualquer item ainda PENDING antes de fechar — um pedido pago nunca deve deixar de chegar à cozinha. */
+async function flushPendingItemsToKitchen(tx: Prisma.TransactionClient, comandaId: string) {
+  const pendingItems = await tx.comandaItem.findMany({
+    where: { comandaId, status: "PENDING" },
+    include: { product: true },
+  });
+  if (pendingItems.length === 0) return;
+
+  const comanda = await tx.comanda.findUniqueOrThrow({
+    where: { id: comandaId },
+    include: { mesa: true },
+  });
+
+  await tx.comandaItem.updateMany({
+    where: { id: { in: pendingItems.map((i) => i.id) } },
+    data: { status: "SENT_TO_KITCHEN" },
+  });
+
+  await tx.printJob.create({
+    data: {
+      comandaId,
+      payload: {
+        mesa: comanda.mesa.label,
+        sentAt: new Date().toISOString(),
+        items: pendingItems.map((i) => ({
+          productName: i.product.name,
+          quantity: i.quantity,
+          notes: i.notes,
+        })),
+      },
+    },
+  });
 }
 
 /**
  * Baixa de estoque + fechamento da comanda — chamado depois que o pagamento
  * total já está confirmado.
  *
- * Idempotente por design: se a comanda já não estiver mais OPEN, não faz
- * nada. Isso importa porque uma cobrança Pix pode ficar pendente depois que
- * a comanda já foi fechada por outro meio (ex: cliente paga um QR code Pix
- * antigo depois do caixa já ter fechado a conta em dinheiro) — sem essa
- * checagem, a confirmação tardia baixaria o estoque uma segunda vez e
- * duplicaria a receita nos relatórios.
+ * Idempotente e concorrência-segura: o `updateMany` condicional
+ * (`WHERE status = 'OPEN'`) é a guarda atômica — se outra transação já
+ * fechou a comanda entre a leitura e a escrita (ex: caixa fecha em dinheiro
+ * no mesmo instante em que um webhook de Pix atrasado chega), o `count`
+ * retorna 0 e nada mais é feito. Isso cobre tanto o caso sequencial (Pix
+ * confirmado bem depois de a comanda já ter fechado por outro meio) quanto
+ * a corrida concorrente de verdade — o `UPDATE` do Postgres serializa as
+ * duas transações.
  */
 async function closeComandaAndDecrementStock(
   tx: Prisma.TransactionClient,
   comandaId: string
 ) {
-  const comanda = await tx.comanda.findUniqueOrThrow({ where: { id: comandaId } });
-  if (comanda.status !== "OPEN") return;
+  await flushPendingItemsToKitchen(tx, comandaId);
+
+  const claimed = await tx.comanda.updateMany({
+    where: { id: comandaId, status: "OPEN" },
+    data: { status: "CLOSED", closedAt: new Date() },
+  });
+  if (claimed.count === 0) return;
 
   const items = await tx.comandaItem.findMany({
     where: { comandaId, status: { not: "CANCELLED" } },
@@ -58,11 +110,6 @@ async function closeComandaAndDecrementStock(
       data: { stock: { decrement: item.quantity } },
     });
   }
-
-  await tx.comanda.update({
-    where: { id: comandaId },
-    data: { status: "CLOSED", closedAt: new Date() },
-  });
 }
 
 const CashSchema = z.object({
@@ -90,7 +137,7 @@ export async function closeComandaWithCash(
   if (comanda.status !== "OPEN") {
     return { error: "Esta comanda já não está mais aberta." };
   }
-  if (parsed.data.amountReceived < total) {
+  if (toCents(parsed.data.amountReceived) < toCents(total)) {
     return { error: "Valor recebido é menor que o total da comanda." };
   }
 
@@ -159,6 +206,8 @@ export async function createPixPaymentForComanda(comandaId: string) {
   revalidatePath(`/caixa/comanda/${comandaId}/pix`);
 }
 
+const TERMINAL_FAILED_STATUSES = new Set(["rejected", "cancelled"]);
+
 /** Usado tanto pelo webhook quanto pela checagem manual — confirma e fecha a comanda se o Pix foi aprovado. */
 export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
   const payment = await prisma.payment.findFirst({
@@ -169,6 +218,15 @@ export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
   }
 
   const { status } = await getPixPaymentStatus(gatewayPaymentId);
+
+  if (TERMINAL_FAILED_STATUSES.has(status ?? "")) {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: "FAILED" },
+    });
+    return status;
+  }
+
   if (status !== "approved") return status;
 
   await prisma.$transaction(async (tx) => {
@@ -176,6 +234,19 @@ export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
       where: { id: payment.id },
       data: { status: "CONFIRMED", confirmedAt: new Date() },
     });
+
+    // A cobrança Pix trava o valor no momento em que foi gerada. Se itens
+    // foram adicionados à comanda depois disso (e ela continua aberta),
+    // fechar agora faria a casa perder a diferença — em vez disso, deixa a
+    // comanda aberta pra o caixa cobrar o restante por outro meio.
+    const currentItems = await tx.comandaItem.findMany({
+      where: { comandaId: payment.comandaId, status: { not: "CANCELLED" } },
+    });
+    const currentTotal = computeTotal(currentItems);
+    if (toCents(currentTotal) > toCents(Number(payment.amount))) {
+      return;
+    }
+
     await closeComandaAndDecrementStock(tx, payment.comandaId);
   });
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { BR_TIME_ZONE } from "@/lib/timezone";
 
 export default async function CaixaPage() {
   const comandas = await prisma.comanda.findMany({
@@ -35,7 +36,12 @@ export default async function CaixaPage() {
               <div>
                 <p className="text-sm font-medium">{c.mesa.label}</p>
                 <p className="text-xs text-neutral-500">
-                  aberta às {c.openedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                  aberta às{" "}
+                  {c.openedAt.toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: BR_TIME_ZONE,
+                  })}
                   {pendingKitchen && " · itens ainda não enviados"}
                 </p>
               </div>

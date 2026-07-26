@@ -1,20 +1,17 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { brazilDayStart, brazilWeekStart, brazilMonthStart } from "@/lib/timezone";
 
 type Range = "hoje" | "semana" | "mes";
 
+// O servidor roda em UTC (hospedagem na nuvem), mas o bar é no Brasil — usar
+// hora local do processo faria "hoje" virar às 21h de Brasília, bem no meio
+// do movimento. brazilDayStart/etc. sempre calculam em horário de Brasília,
+// independente do fuso do servidor.
 function rangeStart(range: Range): Date {
-  const now = new Date();
-  if (range === "hoje") {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (range === "semana") {
-    const day = now.getDay(); // 0 = domingo
-    const diffToMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday);
-    return monday;
-  }
-  return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (range === "hoje") return brazilDayStart();
+  if (range === "semana") return brazilWeekStart();
+  return brazilMonthStart();
 }
 
 const RANGE_LABEL: Record<Range, string> = {

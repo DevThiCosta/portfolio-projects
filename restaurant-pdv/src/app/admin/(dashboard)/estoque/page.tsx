@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { adjustStock } from "@/app/actions/stock";
 import { AdjustStockForm } from "./adjust-stock-form";
+import { BR_TIME_ZONE } from "@/lib/timezone";
 
 export default async function EstoquePage() {
   const products = await prisma.product.findMany({
@@ -53,7 +54,7 @@ export default async function EstoquePage() {
                   <p>{m.product.name}</p>
                   <p className="text-xs text-neutral-500">
                     {m.reason} · {m.createdBy?.name ?? "sistema"} ·{" "}
-                    {m.createdAt.toLocaleString("pt-BR")}
+                    {m.createdAt.toLocaleString("pt-BR", { timeZone: BR_TIME_ZONE })}
                   </p>
                 </div>
                 <span className={m.delta < 0 ? "text-red-400" : "text-emerald-400"}>
