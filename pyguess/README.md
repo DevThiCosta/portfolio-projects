@@ -34,7 +34,7 @@ The program generates a random number between **1 and 100**, and the player must
 Clone or download the repository and navigate to the project directory:
 
 ```bash
-git clone git@github.com:DevThiCosta/codveda-internship.git
-cd codveda-internship/pyguess
+git clone git@github.com:DevThiCosta/study-lab.git
+cd study-lab/pyguess
 python3 -m pyguess.game
 
