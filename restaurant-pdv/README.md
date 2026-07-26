@@ -111,9 +111,7 @@ to the same order a waiter could also be building.
 
 ## 🤖 AI-Assisted QA & Security
 
-Claude Code is used on this project as a QA and security tester, reviewing
-code for bugs and vulnerabilities, and commits are also handled through the
-assistant.
+Claude Code is used on this project as a QA and security reviewer during development — flagging bugs, race conditions, and vulnerabilities before they ship. Implementation and commits are my own.
 
 ---
 
