@@ -30,9 +30,9 @@ Languages: Python, Ruby, JavaScript, TypeScript, C. Tools & Platforms: Git, GitH
 
 ## 📈 Progress Tracking
 
-✅ **Completed:** 🎮 [PyGuess](./pyguess) — a command-line number guessing game built in Python, with difficulty levels and unit tests using pytest.
+✅ **Completed:** 🎮 [PyGuess](./pyguess) — a command-line number guessing game built in Python, with difficulty levels and unit tests using pytest. 🍽️ [Restaurant PDV](./restaurant-pdv) — a full-stack point-of-sale system for a small bar: waiter ordering, automatic kitchen printing, checkout via cash/Pix/card, and recipe-aware stock control.
 
-🟡 **In progress:** 🚘 [Auto Estética App](./auto-estetica-app) — a native Android app for a car detailing business: clients can schedule appointments, leave reviews, see photos of completed services, and find contact info, while the owner manages product inventory and sales reports. 🍽️ [Restaurant PDV](./restaurant-pdv) — a point-of-sale system for small and medium-sized restaurants, designed to run on a local server.
+🟡 **In progress:** 🚘 [Auto Estética App](./auto-estetica-app) — a native Android app for a car detailing business: clients can schedule appointments, leave reviews, see photos of completed services, and find contact info, while the owner manages product inventory and sales reports.
 
 🔜 **Exploring next:** CS50 exercises and C projects to deepen my understanding of algorithms and low-level programming, plus continued study of cybersecurity fundamentals.
 
