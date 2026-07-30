@@ -45,3 +45,22 @@ export function brazilMonthStart(now = new Date()): Date {
 export function olderThan(thresholdMs: number): Date {
   return new Date(Date.now() - thresholdMs);
 }
+
+/** Soma (ou subtrai, com `months` negativo) meses a uma data, preservando o dia e horário. */
+export function addCalendarMonthsBrazil(date: Date, months: number): Date {
+  const { year, month, date: day } = brazilDateParts(date);
+  const target = new Date(date.getTime());
+  target.setUTCFullYear(year, month + months, day);
+  return target;
+}
+
+/** Converte o valor de um <input type="date"> ("YYYY-MM-DD") pra meia-noite em Brasília. */
+export function brazilDateFromLabel(label: string): Date {
+  const [year, month, date] = label.split("-").map(Number);
+  return brazilMidnightUTC(year, month - 1, date);
+}
+
+/** Converte o valor de um <input type="month"> ("YYYY-MM") pro dia 1, meia-noite em Brasília. */
+export function brazilMonthStartFromLabel(label: string): Date {
+  return brazilDateFromLabel(`${label}-01`);
+}

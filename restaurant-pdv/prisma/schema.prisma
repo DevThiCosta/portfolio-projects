@@ -53,6 +53,30 @@ enum PrintJobStatus {
   FAILED
 }
 
+enum ExpenseKind {
+  FIXA
+  VARIAVEL
+  COMPRA_INSUMO
+  COMPRA_SERVICO
+}
+
+enum ExpenseStatus {
+  ATIVA
+  CANCELADA
+}
+
+enum PaymentTerm {
+  AVISTA
+  PRAZO_UNICO
+  PRAZO_PARCELADO
+}
+
+enum SupplierKind {
+  INSUMO
+  SERVICO
+  AMBOS
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -68,6 +92,7 @@ model User {
   paymentsReceived    Payment[]        @relation("PaymentReceivedBy")
   stockMovements      StockMovement[]  @relation("StockMovementCreatedBy")
   insumoMovements     InsumoMovement[] @relation("InsumoMovementCreatedBy")
+  expensesCreated     Expense[]        @relation("ExpenseCreatedBy")
 
   @@index([role])
 }
@@ -110,8 +135,9 @@ model Insumo {
   active            Boolean  @default(true)
   createdAt         DateTime @default(now())
 
-  usedIn    ProductIngredient[]
-  movements InsumoMovement[]
+  usedIn        ProductIngredient[]
+  movements     InsumoMovement[]
+  purchaseItems ExpenseItem[]
 
   @@index([active])
 }
@@ -137,6 +163,7 @@ model InsumoMovement {
   delta             Decimal  @db.Decimal(10, 3) // negativo = saida, positivo = entrada
   reason            String // ex: "venda", "reposicao", "perda"
   relatedComandaId  String?
+  relatedExpenseId  String? // preenchido quando a movimentacao vem de uma compra/estorno em Expense
   createdBy         User?    @relation("InsumoMovementCreatedBy", fields: [createdByUserId], references: [id])
   createdByUserId   String?
   createdAt         DateTime @default(now())
@@ -225,4 +252,85 @@ model StockMovement {
   createdAt         DateTime @default(now())
 
   @@index([productId])
+}
+
+model Supplier {
+  id          String       @id @default(cuid())
+  name        String
+  kind        SupplierKind @default(AMBOS)
+  document    String? // CNPJ/CPF, opcional
+  contactName String?
+  phone       String?
+  email       String?
+  notes       String?
+  active      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  expenses Expense[]
+
+  @@index([active])
+}
+
+/// Lancamento financeiro: cobre tanto contas fixas/variaveis (aluguel,
+/// internet...) quanto compras de fornecedor (insumo ou servico). `kind`
+/// discrimina a origem; compras tem `items`, contas normalmente nao.
+model Expense {
+  id                      String        @id @default(cuid())
+  kind                    ExpenseKind
+  status                  ExpenseStatus @default(ATIVA)
+  description             String
+  category                String // rotulo livre: "Aluguel", "Energia", "Insumos"...
+  supplier                Supplier?     @relation(fields: [supplierId], references: [id])
+  supplierId              String?
+  amount                  Decimal       @db.Decimal(10, 2) // total; em compras = soma dos items
+  paymentTerm             PaymentTerm
+  installmentsCount       Int           @default(1)
+  installmentIntervalDays Int           @default(30) // usado so quando PRAZO_PARCELADO
+  issuedAt                DateTime      @default(now()) // data da conta/nota
+  competencia             DateTime? // mes de referencia (dia 1, horario BR) - so FIXA/VARIAVEL
+  notes                   String?
+  createdBy               User?         @relation("ExpenseCreatedBy", fields: [createdByUserId], references: [id])
+  createdByUserId         String?
+  createdAt               DateTime      @default(now())
+
+  items        ExpenseItem[]
+  installments ExpenseInstallment[]
+
+  @@index([kind, status])
+  @@index([competencia])
+  @@index([supplierId])
+}
+
+/// Linha de uma compra (nota fiscal). insumoId setado = reposicao
+/// automatica de estoque; null = item de servico/despesa avulsa, so contabil.
+model ExpenseItem {
+  id          String   @id @default(cuid())
+  expense     Expense  @relation(fields: [expenseId], references: [id])
+  expenseId   String
+  insumo      Insumo?  @relation(fields: [insumoId], references: [id])
+  insumoId    String?
+  description String // texto livre da nota, ex "Cachaca 51 1L"
+  quantity    Decimal  @db.Decimal(10, 3)
+  unitCost    Decimal  @db.Decimal(10, 2)
+  totalCost   Decimal  @db.Decimal(10, 2) // quantity * unitCost, persistido p/ auditoria
+  createdAt   DateTime @default(now())
+
+  @@index([expenseId])
+  @@index([insumoId])
+}
+
+model ExpenseInstallment {
+  id        String    @id @default(cuid())
+  expense   Expense   @relation(fields: [expenseId], references: [id])
+  expenseId String
+  number    Int // 1-based
+  dueDate   DateTime
+  amount    Decimal   @db.Decimal(10, 2)
+  paid      Boolean   @default(false)
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([expenseId, number])
+  @@index([expenseId])
+  @@index([dueDate, paid])
 }
