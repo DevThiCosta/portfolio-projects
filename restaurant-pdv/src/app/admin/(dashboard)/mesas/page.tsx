@@ -14,7 +14,7 @@ export default async function MesasPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Mesas</h1>
+        <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Mesas</h1>
       </div>
 
       <NewMesaForm action={createMesa} />

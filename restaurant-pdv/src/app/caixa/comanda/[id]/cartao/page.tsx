@@ -20,7 +20,7 @@ export default async function CardTerminalPage({
     return (
       <div className="space-y-4">
         <BackLink comandaId={id} />
-        <h1 className="text-lg font-semibold">{comanda.mesa.label}</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label}</h1>
         <p className="text-sm text-emerald-400">Comanda já fechada.</p>
       </div>
     );
@@ -32,7 +32,7 @@ export default async function CardTerminalPage({
   return (
     <div className="space-y-4">
       <BackLink comandaId={id} />
-      <h1 className="text-lg font-semibold">{comanda.mesa.label} — Cartão</h1>
+      <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label} — Cartão</h1>
       <p className="text-2xl font-semibold">R$ {amountDue.toFixed(2)}</p>
       {amountDue !== total && (
         <p className="text-xs text-neutral-500">

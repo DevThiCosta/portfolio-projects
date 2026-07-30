@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { TicketGlyph } from "@/components/ticket-glyph";
 import { PinLoginForm } from "./pin-login-form";
 
 export default async function LoginPage() {
@@ -12,7 +13,10 @@ export default async function LoginPage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-neutral-950 px-4 py-10 text-neutral-50">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-center text-2xl font-semibold">Bar POS</h1>
+        <h1 className="mb-1 flex items-center justify-center gap-2 text-center font-display text-3xl uppercase tracking-wide text-accent">
+          <TicketGlyph className="size-7" />
+          Bar POS
+        </h1>
         <p className="mb-8 text-center text-sm text-neutral-400">
           Selecione seu nome e digite o PIN
         </p>

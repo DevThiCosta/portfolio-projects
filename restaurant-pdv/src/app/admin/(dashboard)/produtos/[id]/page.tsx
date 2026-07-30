@@ -27,7 +27,7 @@ export default async function EditarProdutoPage({
   return (
     <div className="space-y-10">
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold">Editar produto</h1>
+        <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Editar produto</h1>
         <ProductForm
           action={boundUpdate}
           submitLabel="Salvar alterações"

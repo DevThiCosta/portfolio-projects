@@ -34,12 +34,12 @@ export default async function MesaComandaPage({
         <Link href="/garcom" className="text-xs text-neutral-500 underline">
           ← mesas
         </Link>
-        <h1 className="text-lg font-semibold">{mesa.label}</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{mesa.label}</h1>
         <p className="text-sm text-neutral-400">Mesa livre, sem comanda aberta.</p>
         <form action={openComandaForMesa}>
           <button
             type="submit"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-neutral-200"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
           >
             Abrir comanda
           </button>
@@ -89,7 +89,7 @@ export default async function MesaComandaPage({
         ← mesas
       </Link>
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">{mesa.label}</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{mesa.label}</h1>
         <span className="text-sm text-neutral-400">
           Total: R$ {total.toFixed(2)}
         </span>

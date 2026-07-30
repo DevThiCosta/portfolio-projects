@@ -17,10 +17,10 @@ export default async function ProdutosPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Produtos</h1>
+        <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Produtos</h1>
         <Link
           href="/admin/produtos/novo"
-          className="rounded-lg bg-white px-3 py-1.5 text-sm font-medium text-neutral-950 hover:bg-neutral-200"
+          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
         >
           + Novo produto
         </Link>

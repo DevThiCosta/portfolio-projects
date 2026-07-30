@@ -16,7 +16,7 @@ export default async function InsumosPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Insumos</h1>
+        <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Insumos</h1>
         <p className="text-sm text-neutral-500">
           Ingredientes crus (cachaça, limão, batata...) usados nas receitas de
           produtos compostos como caipirinha e porções.

@@ -12,7 +12,7 @@ export default async function GarcomMesasPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold">Mesas</h1>
+      <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">Mesas</h1>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
         {mesas.map((mesa) => {
           const ocupada = mesa.comandas.length > 0;

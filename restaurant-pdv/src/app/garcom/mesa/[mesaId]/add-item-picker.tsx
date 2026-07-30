@@ -119,7 +119,7 @@ function ProductRow({
               type="button"
               disabled={pending}
               onClick={handleAdd}
-              className="flex-1 rounded-lg bg-white py-2.5 text-sm font-medium text-neutral-950 hover:bg-neutral-200 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
             >
               Adicionar
             </button>

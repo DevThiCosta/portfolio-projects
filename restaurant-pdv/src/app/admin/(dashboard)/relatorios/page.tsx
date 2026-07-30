@@ -79,7 +79,7 @@ export default async function RelatoriosPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Relatórios</h1>
+        <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Relatórios</h1>
         <div className="flex gap-2 text-sm">
           {(["hoje", "semana", "mes"] as Range[]).map((r) => (
             <Link
@@ -87,7 +87,7 @@ export default async function RelatoriosPage({
               href={`/admin/relatorios?range=${r}`}
               className={`rounded-md border px-2 py-1 ${
                 r === range
-                  ? "border-white bg-white text-neutral-950"
+                  ? "border-accent bg-accent text-accent-foreground"
                   : "border-neutral-700 text-neutral-300 hover:bg-neutral-900"
               }`}
             >

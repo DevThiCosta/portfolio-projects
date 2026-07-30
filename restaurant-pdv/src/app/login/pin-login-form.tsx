@@ -40,7 +40,7 @@ export function PinLoginForm({ users }: { users: StaffUser[] }) {
             onClick={() => setSelected(u)}
             className="flex flex-col items-center gap-1 rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-5 text-left transition hover:border-neutral-600 active:scale-95"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-800 text-sm font-medium">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-800 text-sm font-medium text-accent">
               {u.name.slice(0, 2).toUpperCase()}
             </span>
             <span className="text-sm font-medium">{u.name}</span>
@@ -75,7 +75,7 @@ export function PinLoginForm({ users }: { users: StaffUser[] }) {
       </button>
 
       <p className="mb-4 text-sm text-neutral-300">
-        Olá, <span className="font-medium text-white">{selected.name}</span>
+        Olá, <span className="font-medium text-neutral-50">{selected.name}</span>
       </p>
 
       <div className="mb-4 flex gap-3">
@@ -83,7 +83,7 @@ export function PinLoginForm({ users }: { users: StaffUser[] }) {
           <span
             key={i}
             className={`h-3 w-3 rounded-full border border-neutral-600 ${
-              i < pin.length ? "bg-white" : "bg-transparent"
+              i < pin.length ? "bg-accent" : "bg-transparent"
             }`}
           />
         ))}
