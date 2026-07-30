@@ -123,6 +123,115 @@ async function main() {
     }
   }
 
+  // --- Custos: fornecedores, contas fixas e uma compra de exemplo ---
+  const SUPPLIERS = [
+    { name: "Atacadão Bebidas", kind: "INSUMO" as const },
+    { name: "Light Energia", kind: "SERVICO" as const },
+  ];
+  const supplierIdByName = new Map<string, string>();
+  for (const s of SUPPLIERS) {
+    const existing = await prisma.supplier.findFirst({ where: { name: s.name } });
+    const record = existing ?? (await prisma.supplier.create({ data: s }));
+    supplierIdByName.set(s.name, record.id);
+  }
+
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 3, 0, 0));
+
+  const FIXED_EXPENSES = [
+    {
+      description: "Aluguel do salão",
+      category: "Aluguel",
+      amount: 3500,
+      dueDay: 10,
+    },
+    {
+      description: "Internet",
+      category: "Internet",
+      amount: 150,
+      dueDay: 15,
+    },
+  ];
+  for (const fx of FIXED_EXPENSES) {
+    const existing = await prisma.expense.findFirst({
+      where: { kind: "FIXA", description: fx.description, competencia: monthStart },
+    });
+    if (existing) continue;
+    const dueDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), fx.dueDay, 3, 0, 0));
+    await prisma.expense.create({
+      data: {
+        kind: "FIXA",
+        description: fx.description,
+        category: fx.category,
+        amount: fx.amount,
+        paymentTerm: "PRAZO_UNICO",
+        installmentsCount: 1,
+        issuedAt: monthStart,
+        competencia: monthStart,
+        installments: {
+          create: [{ number: 1, dueDate, amount: fx.amount }],
+        },
+      },
+    });
+  }
+
+  const existingPurchase = await prisma.expense.findFirst({
+    where: { kind: "COMPRA_INSUMO", description: { startsWith: "Atacadão Bebidas" } },
+  });
+  if (!existingPurchase) {
+    const cachacaId = insumoIdByName.get("Cachaça");
+    const limaoId = insumoIdByName.get("Limão");
+    const supplierId = supplierIdByName.get("Atacadão Bebidas");
+    if (cachacaId && limaoId && supplierId) {
+      const purchaseItems = [
+        { insumoId: cachacaId, description: "Cachaça 51 (garrafa 1L)", quantity: 2000, unitCost: 0.045 },
+        { insumoId: limaoId, description: "Limão taiti (caixa)", quantity: 50, unitCost: 0.8 },
+      ];
+      const amount = purchaseItems.reduce((sum, i) => sum + i.quantity * i.unitCost, 0);
+      const totalCents = Math.round(amount * 100);
+      const halfCents = Math.floor(totalCents / 2);
+      const dueDate1 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 30, 3, 0, 0));
+      const dueDate2 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 60, 3, 0, 0));
+
+      await prisma.$transaction(async (tx) => {
+        const expense = await tx.expense.create({
+          data: {
+            kind: "COMPRA_INSUMO",
+            description: "Atacadão Bebidas — Cachaça 51 (garrafa 1L), Limão taiti (caixa)",
+            category: "Insumos",
+            supplierId,
+            amount,
+            paymentTerm: "PRAZO_PARCELADO",
+            installmentsCount: 2,
+            installmentIntervalDays: 30,
+            issuedAt: now,
+            items: { create: purchaseItems.map((i) => ({ ...i, totalCost: i.quantity * i.unitCost })) },
+            installments: {
+              create: [
+                { number: 1, dueDate: dueDate1, amount: halfCents / 100 },
+                { number: 2, dueDate: dueDate2, amount: (totalCents - halfCents) / 100 },
+              ],
+            },
+          },
+        });
+        for (const item of purchaseItems) {
+          await tx.insumo.update({
+            where: { id: item.insumoId },
+            data: { stock: { increment: item.quantity } },
+          });
+          await tx.insumoMovement.create({
+            data: {
+              insumoId: item.insumoId,
+              delta: item.quantity,
+              reason: "reposição (compra)",
+              relatedExpenseId: expense.id,
+            },
+          });
+        }
+      });
+    }
+  }
+
   console.log("Seed concluído.");
   console.log(`Admin: usuário "${ADMIN_USERNAME}", senha "${ADMIN_PASSWORD}" (troque em produção)`);
   console.log("Garçom/Caixa PINs:", STAFF.map((s) => `${s.name}: ${s.pin}`).join(" | "));

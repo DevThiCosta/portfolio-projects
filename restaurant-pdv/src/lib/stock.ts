@@ -165,3 +165,30 @@ export async function releaseStock(
     },
   });
 }
+
+/**
+ * Entrada ou saída avulsa de insumo fora do fluxo de venda — usada por
+ * compras (delta positivo, reposição automática) e pelo estorno de uma
+ * compra cancelada (delta negativo). Mesmo padrão update+create de
+ * `adjustInsumoStock` em app/actions/insumos.ts, só que reutilizável.
+ */
+export async function applyInsumoMovement(
+  tx: Prisma.TransactionClient,
+  insumoId: string,
+  delta: number,
+  context: { reason: string; relatedExpenseId?: string; createdByUserId?: string }
+) {
+  await tx.insumo.update({
+    where: { id: insumoId },
+    data: { stock: { increment: delta } },
+  });
+  await tx.insumoMovement.create({
+    data: {
+      insumoId,
+      delta,
+      reason: context.reason,
+      relatedExpenseId: context.relatedExpenseId,
+      createdByUserId: context.createdByUserId,
+    },
+  });
+}
