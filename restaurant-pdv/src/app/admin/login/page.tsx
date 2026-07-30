@@ -16,7 +16,9 @@ export default function AdminLoginPage() {
         action={formAction}
         className="w-full max-w-sm rounded-xl border border-neutral-800 bg-neutral-900 p-6"
       >
-        <h1 className="mb-1 text-xl font-semibold">Administração</h1>
+        <h1 className="mb-1 font-display text-2xl uppercase tracking-wide text-neutral-50">
+          Administração
+        </h1>
         <p className="mb-6 text-sm text-neutral-400">
           Acesso restrito ao dono/gerente do bar
         </p>
@@ -49,7 +51,7 @@ export default function AdminLoginPage() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-lg bg-white py-2 text-sm font-medium text-neutral-950 transition hover:bg-neutral-200 disabled:opacity-50"
+          className="w-full rounded-lg bg-accent py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-hover disabled:opacity-50"
         >
           {pending ? "Entrando…" : "Entrar"}
         </button>

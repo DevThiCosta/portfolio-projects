@@ -31,7 +31,7 @@ export default async function AdminHomePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Visão geral</h1>
+      <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Visão geral</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card label="Comandas abertas" value={openComandas} href="/caixa" />
         <Card

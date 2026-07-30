@@ -42,7 +42,7 @@ export default async function CaixaComandaPage({
         <Link href="/caixa" className="text-xs text-neutral-500 underline">
           ← comandas
         </Link>
-        <h1 className="text-lg font-semibold">{comanda.mesa.label}</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label}</h1>
         <p className="text-sm text-emerald-400">
           {comanda.status === "CLOSED" ? "Comanda fechada" : "Comanda cancelada"}
           {comanda.closedAt &&
@@ -99,7 +99,7 @@ export default async function CaixaComandaPage({
       <Link href="/caixa" className="text-xs text-neutral-500 underline">
         ← comandas
       </Link>
-      <h1 className="text-lg font-semibold">{comanda.mesa.label}</h1>
+      <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label}</h1>
 
       <div className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
         {comanda.items.map((item) => (

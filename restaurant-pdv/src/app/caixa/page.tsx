@@ -44,7 +44,7 @@ export default async function CaixaPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1 className="text-lg font-semibold">Comandas abertas</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">Comandas abertas</h1>
 
         {comandas.length === 0 && (
           <p className="text-sm text-neutral-500">Nenhuma comanda aberta no momento.</p>

@@ -17,7 +17,7 @@ export default async function EstoquePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Estoque</h1>
+      <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Estoque</h1>
 
       <div className="grid gap-6 sm:grid-cols-2">
         <div className="space-y-3">

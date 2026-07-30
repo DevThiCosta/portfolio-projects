@@ -60,7 +60,7 @@ export function AdjustInsumoForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-950 hover:bg-neutral-200 disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
       >
         {pending ? "Salvando…" : "Registrar ajuste"}
       </button>

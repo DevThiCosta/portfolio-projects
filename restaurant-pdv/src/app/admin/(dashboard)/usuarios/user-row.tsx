@@ -69,7 +69,7 @@ export function UserRow({
           <button
             type="submit"
             disabled={resetPending}
-            className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-neutral-950 hover:bg-neutral-200 disabled:opacity-50"
+            className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
           >
             Salvar
           </button>

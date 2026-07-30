@@ -28,7 +28,7 @@ export default async function PixPaymentPage({
     return (
       <div className="space-y-4">
         <BackLink comandaId={id} />
-        <h1 className="text-lg font-semibold">{comanda.mesa.label}</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label}</h1>
         <p className="text-sm text-emerald-400">
           Comanda fechada — pagamento via Pix confirmado.
         </p>
@@ -41,7 +41,7 @@ export default async function PixPaymentPage({
     return (
       <div className="space-y-4">
         <BackLink comandaId={id} />
-        <h1 className="text-lg font-semibold">{comanda.mesa.label} — Pix</h1>
+        <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label} — Pix</h1>
         {!isPixConfigured() ? (
           <p className="rounded-lg border border-amber-800 bg-amber-950/30 p-3 text-sm text-amber-300">
             Pix ainda não configurado neste servidor. Defina
@@ -64,7 +64,7 @@ export default async function PixPaymentPage({
   return (
     <div className="space-y-4">
       <BackLink comandaId={id} />
-      <h1 className="text-lg font-semibold">{comanda.mesa.label} — Pix</h1>
+      <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{comanda.mesa.label} — Pix</h1>
       <p className="text-sm text-neutral-400">
         Valor: R$ {Number(pixPayment.amount).toFixed(2)}
       </p>

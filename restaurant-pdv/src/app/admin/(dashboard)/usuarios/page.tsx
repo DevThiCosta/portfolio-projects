@@ -11,7 +11,7 @@ export default async function UsuariosPage() {
 
   return (
     <div className="max-w-lg space-y-6">
-      <h1 className="text-xl font-semibold">Usuários (garçom/caixa)</h1>
+      <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Usuários (garçom/caixa)</h1>
 
       <NewStaffForm action={createStaffUser} />
 
