@@ -50,7 +50,7 @@ def play():
     if guess == secret:
         print(f"🎉 Congratulations! You guessed it in {attempts} attempts.")
     else:
-        print(f"❌ Out of attempts! The number was {secret}.")
+        print("❌ Out of attempts! Better luck next time.")
 
 if __name__ == "__main__":
     play()
