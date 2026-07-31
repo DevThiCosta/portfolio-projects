@@ -3,6 +3,7 @@ import { createInsumo, adjustInsumoStock } from "@/app/actions/insumos";
 import { NewInsumoForm } from "./new-insumo-form";
 import { AdjustInsumoForm } from "./adjust-insumo-form";
 import { ToggleInsumoButton } from "./toggle-insumo-button";
+import { WarnGlyph } from "@/components/warn-glyph";
 
 export default async function InsumosPage() {
   const insumos = await prisma.insumo.findMany({ orderBy: { name: "asc" } });
@@ -42,9 +43,10 @@ export default async function InsumosPage() {
                       {i.name}
                     </p>
                     <p
-                      className={`text-xs ${low ? "text-amber-400" : "text-neutral-500"}`}
+                      className={`flex items-center gap-1 text-xs ${low ? "text-amber-400" : "text-neutral-500"}`}
                     >
-                      {Number(i.stock)} {i.unit} {low && "⚠"}
+                      {Number(i.stock)} {i.unit}
+                      {low && <WarnGlyph className="size-3" />}
                     </p>
                   </div>
                   <ToggleInsumoButton insumoId={i.id} active={i.active} />

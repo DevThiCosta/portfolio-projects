@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/dal";
 import { StaffHeader } from "@/components/staff-header";
+import { Toaster } from "@/components/toaster";
 
 const NAV = [
   { href: "/admin", label: "Início" },
@@ -21,6 +22,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-dvh bg-neutral-950 text-neutral-50">
+      <Toaster />
       <StaffHeader name={session.name} roleLabel="Admin" nav={NAV} />
       <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
     </div>

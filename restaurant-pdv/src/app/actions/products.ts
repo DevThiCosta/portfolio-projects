@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
+import { flashSuccess } from "@/lib/flash";
 
 const ProductSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto"),
@@ -55,6 +56,7 @@ export async function createProduct(
   });
 
   revalidatePath("/admin/produtos");
+  await flashSuccess("Produto criado");
   redirect("/admin/produtos");
 }
 
@@ -84,6 +86,7 @@ export async function updateProduct(
   });
 
   revalidatePath("/admin/produtos");
+  await flashSuccess("Produto atualizado");
   redirect("/admin/produtos");
 }
 

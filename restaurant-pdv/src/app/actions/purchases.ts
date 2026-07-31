@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import { computeInstallments } from "@/lib/expenses";
 import { applyInsumoMovement } from "@/lib/stock";
+import { flashSuccess } from "@/lib/flash";
 import { brazilDateFromLabel } from "@/lib/timezone";
 
 const PurchaseHeaderSchema = z.object({
@@ -148,5 +149,6 @@ export async function createPurchase(
   revalidatePath("/admin/custos");
   revalidatePath("/admin/insumos");
   revalidatePath("/admin/estoque");
+  await flashSuccess("Compra registrada");
   redirect(`/admin/custos/compras/${expenseId}`);
 }
