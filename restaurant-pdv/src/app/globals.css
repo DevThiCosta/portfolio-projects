@@ -84,6 +84,20 @@ body::before {
  * direita do card, simulando furos (mais robusto entre browsers do que
  * mask-composite pra cortar de verdade).
  */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-toast-in {
+  animation: toast-in 0.2s ease-out;
+}
+
 .card-perforated {
   background-image: radial-gradient(circle at 0 50%, var(--color-neutral-950) 7px, transparent 7.5px);
   background-repeat: repeat-y;

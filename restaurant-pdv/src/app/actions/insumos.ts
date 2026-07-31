@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
+import { flashSuccess } from "@/lib/flash";
 
 const InsumoSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto"),
@@ -41,6 +42,7 @@ export async function createInsumo(
   });
 
   revalidatePath("/admin/insumos");
+  await flashSuccess("Insumo criado");
   redirect("/admin/insumos");
 }
 

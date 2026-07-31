@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { brazilDayStart, brazilWeekStart, brazilMonthStart } from "@/lib/timezone";
+import { BR_TIME_ZONE, brazilDayStart, brazilWeekStart, brazilMonthStart } from "@/lib/timezone";
+import { StatCard } from "@/components/stat-card";
+import { Sparkline } from "@/components/sparkline";
+
+const DAY_LABELS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 
 type Range = "hoje" | "semana" | "mes";
 
@@ -70,6 +74,33 @@ export default async function RelatoriosPage({
     (p) => (p.stock ?? 0) <= (p.lowStockThreshold ?? 0)
   );
 
+  const todayStart = brazilDayStart();
+  const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
+  const recentPayments = await prisma.payment.findMany({
+    where: { status: "CONFIRMED", confirmedAt: { gte: sevenDaysAgo } },
+    select: { amount: true, confirmedAt: true },
+  });
+  const dailyTotals = new Map<number, number>();
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(sevenDaysAgo.getTime() + i * 24 * 60 * 60 * 1000);
+    dailyTotals.set(day.getTime(), 0);
+    return day;
+  });
+  for (const p of recentPayments) {
+    if (!p.confirmedAt) continue;
+    const dayKey = brazilDayStart(p.confirmedAt).getTime();
+    dailyTotals.set(dayKey, (dailyTotals.get(dayKey) ?? 0) + Number(p.amount));
+  }
+  const salesByDay = last7Days.map((day) => ({
+    label: DAY_LABELS[day.getUTCDay()],
+    value: dailyTotals.get(day.getTime()) ?? 0,
+    dateLabel: day.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      timeZone: BR_TIME_ZONE,
+    }),
+  }));
+
   const METHOD_LABEL: Record<string, string> = {
     DINHEIRO: "Dinheiro",
     PIX: "Pix",
@@ -98,10 +129,7 @@ export default async function RelatoriosPage({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-          <p className="text-2xl font-semibold">R$ {totalSales.toFixed(2)}</p>
-          <p className="text-sm text-neutral-400">Total vendido — {RANGE_LABEL[range]}</p>
-        </div>
+        <StatCard label={`Total vendido — ${RANGE_LABEL[range]}`} value={`R$ ${totalSales.toFixed(2)}`} />
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
           <p className="mb-1 text-sm font-medium text-neutral-300">Por forma de pagamento</p>
           {Object.keys(byMethod).length === 0 && (
@@ -114,6 +142,13 @@ export default async function RelatoriosPage({
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+        <p className="mb-4 text-xs font-medium uppercase tracking-wide text-neutral-400">
+          Vendas nos últimos 7 dias
+        </p>
+        <Sparkline points={salesByDay} />
       </div>
 
       <div>

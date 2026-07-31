@@ -6,6 +6,7 @@ import {
   brazilMonthStart,
   brazilMonthStartFromLabel,
 } from "@/lib/timezone";
+import { StatCard } from "@/components/stat-card";
 
 function toLabel(date: Date) {
   return date.toISOString().slice(0, 7);
@@ -68,10 +69,7 @@ export default async function ContasPage({
         </Link>
       </div>
 
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-        <p className="text-2xl font-semibold">R$ {total.toFixed(2)}</p>
-        <p className="text-sm text-neutral-400">Total de contas neste mês</p>
-      </div>
+      <StatCard label="Total de contas neste mês" value={`R$ ${total.toFixed(2)}`} />
 
       <div className="divide-y divide-neutral-800 rounded-lg border border-neutral-800">
         {expenses.map((e) => {

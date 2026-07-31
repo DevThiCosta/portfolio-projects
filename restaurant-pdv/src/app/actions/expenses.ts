@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import { computeInstallments } from "@/lib/expenses";
 import { applyInsumoMovement } from "@/lib/stock";
+import { flashSuccess } from "@/lib/flash";
 import {
   addCalendarMonthsBrazil,
   brazilDateFromLabel,
@@ -95,6 +96,7 @@ export async function createExpense(
 
   revalidatePath("/admin/custos/contas");
   revalidatePath("/admin/custos");
+  await flashSuccess("Conta criada");
   redirect(`/admin/custos/contas/${expense.id}`);
 }
 
@@ -243,6 +245,7 @@ export async function duplicateExpenseToNextMonth(expenseId: string) {
 
   revalidatePath("/admin/custos/contas");
   revalidatePath("/admin/custos");
+  await flashSuccess("Conta duplicada para o próximo mês");
   redirect(`/admin/custos/contas/${created.id}`);
 }
 

@@ -4,8 +4,8 @@
   "description": "PDV para bares — comandas, cozinha e caixa em um só lugar",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#17140f",
+  "theme_color": "#17140f",
   "lang": "pt-BR",
   "icons": [
     {

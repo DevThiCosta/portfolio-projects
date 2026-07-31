@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { BR_TIME_ZONE, addCalendarMonthsBrazil, brazilDayStart, brazilMonthStart } from "@/lib/timezone";
+import { StatCard } from "@/components/stat-card";
 
 const KIND_LABEL: Record<string, string> = {
   FIXA: "Contas fixas",
@@ -57,10 +58,7 @@ export default async function CustosResumoPage() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-          <p className="text-2xl font-semibold">R$ {total.toFixed(2)}</p>
-          <p className="text-sm text-neutral-400">Total de custos este mês</p>
-        </div>
+        <StatCard label="Total de custos este mês" value={`R$ ${total.toFixed(2)}`} />
         <div className="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
           <p className="mb-1 text-sm font-medium text-neutral-300">Por tipo</p>
           {Object.entries(byKind).map(([kind, amount]) => (

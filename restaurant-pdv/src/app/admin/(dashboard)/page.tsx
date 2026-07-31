@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { BR_TIME_ZONE, olderThan } from "@/lib/timezone";
+import { StatCard } from "@/components/stat-card";
 import { ReprintButton } from "./reprint-button";
 
 // Um job PENDING recém-criado é normal (o print-bridge só faz polling a
@@ -33,14 +34,14 @@ export default async function AdminHomePage() {
     <div className="space-y-6">
       <h1 className="font-display text-2xl uppercase tracking-wide text-neutral-50">Visão geral</h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card label="Comandas abertas" value={openComandas} href="/caixa" />
-        <Card
+        <StatCard label="Comandas abertas" value={openComandas} href="/caixa" />
+        <StatCard
           label="Impressão travada/falhou"
           value={troubledPrintJobs.length}
           href="#impressao"
           warn={troubledPrintJobs.length > 0}
         />
-        <Card
+        <StatCard
           label="Produtos com estoque baixo"
           value={lowStockCount}
           href="/admin/estoque"
@@ -96,29 +97,5 @@ export default async function AdminHomePage() {
         </Link>
       </div>
     </div>
-  );
-}
-
-function Card({
-  label,
-  value,
-  href,
-  warn,
-}: {
-  label: string;
-  value: number;
-  href: string;
-  warn?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-xl border p-4 transition hover:border-neutral-600 ${
-        warn ? "border-amber-700 bg-amber-950/30" : "border-neutral-800 bg-neutral-900"
-      }`}
-    >
-      <p className="text-2xl font-semibold">{value}</p>
-      <p className="text-sm text-neutral-400">{label}</p>
-    </Link>
   );
 }

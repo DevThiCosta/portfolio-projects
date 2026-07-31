@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { adjustStock } from "@/app/actions/stock";
 import { AdjustStockForm } from "./adjust-stock-form";
 import { BR_TIME_ZONE } from "@/lib/timezone";
+import { WarnGlyph } from "@/components/warn-glyph";
 
 export default async function EstoquePage() {
   const products = await prisma.product.findMany({
@@ -32,9 +33,10 @@ export default async function EstoquePage() {
                 <div key={p.id} className="flex items-center justify-between px-3 py-2">
                   <span className="text-sm">{p.name}</span>
                   <span
-                    className={`text-sm font-medium ${low ? "text-amber-400" : "text-neutral-300"}`}
+                    className={`flex items-center gap-1 text-sm font-medium ${low ? "text-amber-400" : "text-neutral-300"}`}
                   >
-                    {p.stock} {low && "⚠"}
+                    {p.stock}
+                    {low && <WarnGlyph className="size-3.5" />}
                   </span>
                 </div>
               );

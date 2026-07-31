@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
+import { flashSuccess } from "@/lib/flash";
 
 const SupplierSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto"),
@@ -45,6 +46,7 @@ export async function createSupplier(
   });
 
   revalidatePath("/admin/custos/fornecedores");
+  await flashSuccess("Fornecedor criado");
   redirect("/admin/custos/fornecedores");
 }
 
@@ -77,6 +79,7 @@ export async function updateSupplier(
   });
 
   revalidatePath("/admin/custos/fornecedores");
+  await flashSuccess("Fornecedor atualizado");
   redirect("/admin/custos/fornecedores");
 }
 
