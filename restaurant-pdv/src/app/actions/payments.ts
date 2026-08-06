@@ -6,17 +6,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import type { Prisma } from "@/generated/prisma/client";
-import { createPixCharge, getPixPaymentStatus, isPixConfigured } from "@/lib/mercadopago";
+import { createPixCharge, isPixConfigured } from "@/lib/mercadopago";
 import { toCents, centsToAmount } from "@/lib/money";
 import { flushPendingItemsToKitchen } from "@/lib/kitchen";
-
-function computeTotal(items: { unitPriceAtOrder: Prisma.Decimal | number; quantity: number }[]) {
-  const cents = items.reduce(
-    (sum, i) => sum + toCents(Number(i.unitPriceAtOrder)) * i.quantity,
-    0
-  );
-  return centsToAmount(cents);
-}
+import { computeTotal, claimOpenComanda, confirmPixPaymentIfApproved } from "@/lib/pix-confirmation";
 
 /**
  * Total da comanda, quanto já foi pago (pagamentos CONFIRMED) e quanto ainda
@@ -24,9 +17,18 @@ function computeTotal(items: { unitPriceAtOrder: Prisma.Decimal | number; quanti
  * — importa quando já existe um pagamento parcial (ex: Pix confirmado, mas
  * itens foram adicionados depois e a comanda continua aberta pra cobrar a
  * diferença).
+ *
+ * Aceita `client` opcional pra poder rodar dentro de uma transação — usado
+ * pelo fechamento em dinheiro pra reconfirmar o saldo devido no exato
+ * momento em que a comanda é reivindicada, não com o valor calculado antes
+ * da transação começar (que pode estar desatualizado se um Pix for
+ * confirmado nesse meio-tempo).
  */
-async function getComandaBalance(comandaId: string) {
-  const comanda = await prisma.comanda.findUniqueOrThrow({
+async function getComandaBalance(
+  comandaId: string,
+  client: Prisma.TransactionClient | typeof prisma = prisma
+) {
+  const comanda = await client.comanda.findUniqueOrThrow({
     where: { id: comandaId },
     include: {
       items: { where: { status: { not: "CANCELLED" } }, orderBy: { createdAt: "asc" } },
@@ -41,26 +43,9 @@ async function getComandaBalance(comandaId: string) {
 
 /** Mantido para a tela do cartão, que só precisa do total/saldo — mesma lógica de getComandaBalance. */
 async function getComandaTotal(comandaId: string) {
+  await requireRole(["CAIXA", "ADMIN"], "/login");
   const { comanda, total, amountDue } = await getComandaBalance(comandaId);
   return { comanda, total, amountDue };
-}
-
-/**
- * Tenta reivindicar o fechamento da comanda de forma atômica: só quem
- * conseguir esse `UPDATE ... WHERE status = 'OPEN'` é quem realmente fecha.
- * Precisa rodar ANTES de criar qualquer `Payment`, nunca depois — se
- * corresse depois, duas tentativas concorrentes de fechar a mesma comanda
- * (ex: caixa clica duas vezes, ou dois meios de pagamento fecham ao mesmo
- * tempo) já teriam criado dois registros de pagamento antes de qualquer uma
- * delas descobrir que perdeu a corrida, já que tudo roda na mesma transação
- * e um `return` antecipado não desfaz o que já rodou antes dele.
- */
-async function claimOpenComanda(tx: Prisma.TransactionClient, comandaId: string): Promise<boolean> {
-  const claimed = await tx.comanda.updateMany({
-    where: { id: comandaId, status: "OPEN" },
-    data: { status: "CLOSED", closedAt: new Date() },
-  });
-  return claimed.count > 0;
 }
 
 const CashSchema = z.object({
@@ -84,12 +69,9 @@ export async function closeComandaWithCash(
     return { error: "Valor inválido." };
   }
 
-  const { comanda, amountDue } = await getComandaBalance(parsed.data.comandaId);
+  const { comanda } = await getComandaBalance(parsed.data.comandaId);
   if (comanda.status !== "OPEN") {
     return { error: "Esta comanda já não está mais aberta." };
-  }
-  if (toCents(parsed.data.amountReceived) < toCents(amountDue)) {
-    return { error: "Valor recebido é menor que o valor devido." };
   }
 
   try {
@@ -98,6 +80,18 @@ export async function closeComandaWithCash(
       if (!claimed) {
         throw new Error("Esta comanda acabou de ser fechada por outra ação.");
       }
+
+      // Recalcula o saldo devido AQUI DENTRO, depois de reivindicar a
+      // comanda — não usa o valor computado antes da transação. Entre esse
+      // cálculo inicial e este ponto, um Pix pode ter sido confirmado pelo
+      // webhook (fluxo independente, fora do controle desta função) e
+      // reduzido o saldo devedor; cobrar o valor antigo em dinheiro
+      // registraria mais receita do que a comanda realmente tem a receber.
+      const { amountDue } = await getComandaBalance(comanda.id, tx);
+      if (toCents(parsed.data.amountReceived) < toCents(amountDue)) {
+        throw new Error("Valor recebido é menor que o valor devido — o saldo mudou, confira novamente.");
+      }
+
       await flushPendingItemsToKitchen(tx, comanda.id);
       await tx.payment.create({
         data: {
@@ -165,67 +159,6 @@ export async function createPixPaymentForComanda(comandaId: string) {
   });
 
   revalidatePath(`/caixa/comanda/${comandaId}/pix`);
-}
-
-const TERMINAL_FAILED_STATUSES = new Set(["rejected", "cancelled"]);
-
-/** Usado tanto pelo webhook quanto pela checagem manual — confirma e fecha a comanda se o Pix foi aprovado. */
-export async function confirmPixPaymentIfApproved(gatewayPaymentId: string) {
-  const payment = await prisma.payment.findFirst({
-    where: { gatewayPaymentId, method: "PIX" },
-  });
-  if (!payment || payment.status !== "PENDING") {
-    return payment?.status ?? null;
-  }
-
-  const { status } = await getPixPaymentStatus(gatewayPaymentId);
-
-  if (TERMINAL_FAILED_STATUSES.has(status ?? "")) {
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: "FAILED" },
-    });
-    return status;
-  }
-
-  if (status !== "approved") return status;
-
-  await prisma.$transaction(async (tx) => {
-    // A confirmação em si (o dinheiro chegou de verdade) é sempre gravada,
-    // mesmo que a comanda não possa mais ser fechada agora — ver checagens
-    // abaixo. `payment.status !== "PENDING"` no topo desta função já
-    // impede que isso rode duas vezes para o mesmo pagamento.
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: { status: "CONFIRMED", confirmedAt: new Date() },
-    });
-
-    // A cobrança Pix trava o valor no momento em que foi gerada. Se itens
-    // foram adicionados à comanda depois disso, fechar agora faria a casa
-    // perder a diferença — em vez disso, deixa a comanda aberta pra o caixa
-    // cobrar o restante por outro meio (getComandaBalance já desconta esse
-    // Pix confirmado do saldo devedor).
-    const currentItems = await tx.comandaItem.findMany({
-      where: { comandaId: payment.comandaId, status: { not: "CANCELLED" } },
-    });
-    const currentTotal = computeTotal(currentItems);
-    if (toCents(currentTotal) > toCents(Number(payment.amount))) {
-      return;
-    }
-
-    const claimed = await claimOpenComanda(tx, payment.comandaId);
-    if (!claimed) {
-      // Comanda já foi fechada por outro meio nesse meio-tempo. O Pix acima
-      // de qualquer forma já ficou CONFIRMED — é um pagamento real recebido
-      // que precisa de reconciliação manual (provavelmente reembolso), não
-      // algo que o software deveria tentar "desfazer" ou esconder.
-      return;
-    }
-
-    await flushPendingItemsToKitchen(tx, payment.comandaId);
-  });
-
-  return "approved";
 }
 
 /**

@@ -11,7 +11,7 @@ export default async function InsumosPage() {
   const recentMovements = await prisma.insumoMovement.findMany({
     orderBy: { createdAt: "desc" },
     take: 15,
-    include: { insumo: true, createdBy: true },
+    include: { insumo: true, createdBy: { select: { id: true, name: true } } },
   });
 
   return (

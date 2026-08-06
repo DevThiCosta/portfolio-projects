@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { WebhookSignatureValidator } from "mercadopago";
-import { confirmPixPaymentIfApproved } from "@/app/actions/payments";
+import { confirmPixPaymentIfApproved } from "@/lib/pix-confirmation";
 
 export async function POST(req: Request) {
   const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;

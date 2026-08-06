@@ -13,7 +13,7 @@ export default async function EstoquePage() {
   const recentMovements = await prisma.stockMovement.findMany({
     orderBy: { createdAt: "desc" },
     take: 15,
-    include: { product: true, createdBy: true },
+    include: { product: true, createdBy: { select: { id: true, name: true } } },
   });
 
   return (

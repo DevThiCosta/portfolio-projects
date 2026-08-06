@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
 
-// CSP não usa nonce de propósito — evita depender de propagação correta
-// via proxy.ts (middleware) pra cada página renderizada, que é fácil de
-// quebrar silenciosamente. img-src precisa de `data:` pro QR code do Pix,
-// que é embutido como data URI, não servido como arquivo. 'unsafe-eval' só
-// entra em dev — o React em modo dev usa eval() pra reconstruir stack
-// traces (HMR, overlay de erro); em produção o React nunca usa eval().
+// CSP tentou usar nonce por requisição (via middleware.ts) numa revisão de
+// segurança, mas foi revertido: bloqueia os próprios scripts inline de
+// hidratação do Next.js (erro de CSP no console + React error #412),
+// verificado na prática contra um build de produção real, não só em teoria.
+// 'unsafe-eval' só entra em dev — o React em modo dev usa eval() pra
+// reconstruir stack traces (HMR, overlay de erro); em produção o React
+// nunca usa eval(). img-src precisa de `data:` pro QR code do Pix, que é
+// embutido como data URI, não servido como arquivo.
 const isDev = process.env.NODE_ENV === "development";
 const CSP = [
   "default-src 'self'",
@@ -23,6 +25,10 @@ const nextConfig: NextConfig = {
   // next/image não é usado em lugar nenhum do app (o QR Pix já é data URI) —
   // desliga a rota /_next/image de vez em vez de deixar uma superfície sem uso.
   images: { unoptimized: true },
+  // Sem isso, `next dev` reinjeta um bloco de instruções voltado a agentes
+  // de IA em AGENTS.md/CLAUDE.md a cada execução (ver histórico do commit
+  // que limpou esse bloco) — AGENTS.md já tem documentação real do projeto.
+  agentRules: false,
   async headers() {
     return [
       {

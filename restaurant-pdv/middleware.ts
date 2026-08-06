@@ -3,14 +3,12 @@ import { decrypt } from "@/lib/session";
 
 const staffPrefixes = ["/garcom", "/caixa"];
 const adminPrefix = "/admin";
-const publicRoutes = ["/login", "/admin/login"];
 
 export default async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   const isAdminRoute = path.startsWith(adminPrefix) && path !== "/admin/login";
   const isStaffRoute = staffPrefixes.some((p) => path.startsWith(p));
-  const isPublicRoute = publicRoutes.includes(path);
 
   if (!isAdminRoute && !isStaffRoute) {
     return NextResponse.next();
@@ -26,10 +24,6 @@ export default async function proxy(req: NextRequest) {
 
   if (isAdminRoute && session.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
-  }
-
-  if (isPublicRoute) {
-    return NextResponse.next();
   }
 
   return NextResponse.next();

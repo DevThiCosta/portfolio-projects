@@ -6,6 +6,7 @@ import { UserRow } from "./user-row";
 export default async function UsuariosPage() {
   const users = await prisma.user.findMany({
     where: { role: { in: ["GARCOM", "CAIXA"] } },
+    select: { id: true, name: true, role: true, active: true },
     orderBy: { name: "asc" },
   });
 
