@@ -233,8 +233,17 @@ async function main() {
   }
 
   console.log("Seed concluído.");
-  console.log(`Admin: usuário "${ADMIN_USERNAME}", senha "${ADMIN_PASSWORD}" (troque em produção)`);
-  console.log("Garçom/Caixa PINs:", STAFF.map((s) => `${s.name}: ${s.pin}`).join(" | "));
+  // Não logamos a senha/PINs em texto plano de propósito — esse console fica
+  // em logs de CI/terminal/plataforma de deploy, que não são um lugar seguro
+  // para credenciais reais. As senhas/PINs padrão estão nas constantes no
+  // topo deste arquivo (ADMIN_USERNAME/ADMIN_PASSWORD/STAFF) — troque-as no
+  // primeiro acesso em produção.
+  console.log(
+    `Admin criado/atualizado: usuário "${ADMIN_USERNAME}" (senha padrão definida em prisma/seed.ts — troque em produção).`
+  );
+  console.log(
+    `Garçom/Caixa: ${STAFF.map((s) => s.name).join(", ")} (PINs padrão definidos em prisma/seed.ts — troque em produção).`
+  );
 }
 
 main()
