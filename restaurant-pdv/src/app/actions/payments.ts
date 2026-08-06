@@ -7,15 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import type { Prisma } from "@/generated/prisma/client";
 import { createPixCharge, getPixPaymentStatus, isPixConfigured } from "@/lib/mercadopago";
-
-/** Evita comparações de ponto flutuante em dinheiro — tudo em centavos inteiros. */
-function toCents(amount: number) {
-  return Math.round(amount * 100);
-}
-
-function centsToAmount(cents: number) {
-  return cents / 100;
-}
+import { toCents, centsToAmount } from "@/lib/money";
+import { flushPendingItemsToKitchen } from "@/lib/kitchen";
 
 function computeTotal(items: { unitPriceAtOrder: Prisma.Decimal | number; quantity: number }[]) {
   const cents = items.reduce(
@@ -50,40 +43,6 @@ async function getComandaBalance(comandaId: string) {
 async function getComandaTotal(comandaId: string) {
   const { comanda, total, amountDue } = await getComandaBalance(comandaId);
   return { comanda, total, amountDue };
-}
-
-/** Envia à cozinha qualquer item ainda PENDING antes de fechar — um pedido pago nunca deve deixar de chegar à cozinha. */
-async function flushPendingItemsToKitchen(tx: Prisma.TransactionClient, comandaId: string) {
-  const pendingItems = await tx.comandaItem.findMany({
-    where: { comandaId, status: "PENDING" },
-    include: { product: true },
-  });
-  if (pendingItems.length === 0) return;
-
-  const comanda = await tx.comanda.findUniqueOrThrow({
-    where: { id: comandaId },
-    include: { mesa: true },
-  });
-
-  await tx.comandaItem.updateMany({
-    where: { id: { in: pendingItems.map((i) => i.id) } },
-    data: { status: "SENT_TO_KITCHEN" },
-  });
-
-  await tx.printJob.create({
-    data: {
-      comandaId,
-      payload: {
-        mesa: comanda.mesa.label,
-        sentAt: new Date().toISOString(),
-        items: pendingItems.map((i) => ({
-          productName: i.product.name,
-          quantity: i.quantity,
-          notes: i.notes,
-        })),
-      },
-    },
-  });
 }
 
 /**

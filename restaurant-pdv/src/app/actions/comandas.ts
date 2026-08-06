@@ -7,6 +7,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import { reserveStock, releaseStock } from "@/lib/stock";
+import { flushPendingItemsToKitchen } from "@/lib/kitchen";
 
 /** Abre uma comanda para a mesa, ou retorna a já aberta (idempotente). */
 export async function openComanda(mesaId: string) {
@@ -124,37 +125,10 @@ export async function sendToKitchen(comandaId: string) {
 
   const comanda = await prisma.comanda.findUniqueOrThrow({
     where: { id: comandaId },
-    include: { mesa: true },
+    select: { mesaId: true },
   });
 
-  await prisma.$transaction(async (tx) => {
-    const pendingItems = await tx.comandaItem.findMany({
-      where: { comandaId, status: "PENDING" },
-      include: { product: true },
-    });
-
-    if (pendingItems.length === 0) return;
-
-    await tx.comandaItem.updateMany({
-      where: { id: { in: pendingItems.map((i) => i.id) } },
-      data: { status: "SENT_TO_KITCHEN" },
-    });
-
-    await tx.printJob.create({
-      data: {
-        comandaId,
-        payload: {
-          mesa: comanda.mesa.label,
-          sentAt: new Date().toISOString(),
-          items: pendingItems.map((i) => ({
-            productName: i.product.name,
-            quantity: i.quantity,
-            notes: i.notes,
-          })),
-        },
-      },
-    });
-  });
+  await prisma.$transaction((tx) => flushPendingItemsToKitchen(tx, comandaId));
 
   revalidatePath(`/garcom/mesa/${comanda.mesaId}`);
   redirect("/garcom");

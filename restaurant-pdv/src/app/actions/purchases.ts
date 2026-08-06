@@ -9,6 +9,7 @@ import { computeInstallments } from "@/lib/expenses";
 import { applyInsumoMovement } from "@/lib/stock";
 import { flashSuccess } from "@/lib/flash";
 import { brazilDateFromLabel } from "@/lib/timezone";
+import { toCents, centsToAmount } from "@/lib/money";
 
 const PurchaseHeaderSchema = z.object({
   supplierId: z.string().trim().optional(),
@@ -88,7 +89,7 @@ export async function createPurchase(
       description,
       quantity,
       unitCost,
-      totalCost: Math.round(quantity * unitCost * 100) / 100,
+      totalCost: centsToAmount(toCents(quantity * unitCost)),
     });
   }
 

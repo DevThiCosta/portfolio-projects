@@ -46,11 +46,17 @@ export function olderThan(thresholdMs: number): Date {
   return new Date(Date.now() - thresholdMs);
 }
 
-/** Soma (ou subtrai, com `months` negativo) meses a uma data, preservando o dia e horário. */
+/**
+ * Soma (ou subtrai, com `months` negativo) meses a uma data, preservando o
+ * horário. O dia é limitado ao último dia do mês de destino — sem isso,
+ * `setUTCFullYear` deixaria uma conta emitida no dia 31 "vazar" para o dia 2
+ * ou 3 do mês seguinte quando o mês de destino tem menos dias.
+ */
 export function addCalendarMonthsBrazil(date: Date, months: number): Date {
   const { year, month, date: day } = brazilDateParts(date);
+  const daysInTargetMonth = new Date(Date.UTC(year, month + months + 1, 0)).getUTCDate();
   const target = new Date(date.getTime());
-  target.setUTCFullYear(year, month + months, day);
+  target.setUTCFullYear(year, month + months, Math.min(day, daysInTargetMonth));
   return target;
 }
 

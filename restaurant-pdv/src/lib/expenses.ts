@@ -1,4 +1,5 @@
 import "server-only";
+import { toCents, centsToAmount } from "@/lib/money";
 
 export type InstallmentPlan = {
   number: number;
@@ -40,7 +41,7 @@ export function computeInstallments(input: {
   }
 
   const n = Math.max(1, input.installmentsCount);
-  const totalCents = Math.round(amount * 100);
+  const totalCents = toCents(amount);
   const baseCents = Math.floor(totalCents / n);
   const remainderCents = totalCents - baseCents * n;
 
@@ -49,6 +50,6 @@ export function computeInstallments(input: {
     const dueDate = new Date(input.firstDueDate!.getTime());
     dueDate.setUTCDate(dueDate.getUTCDate() + input.intervalDays * i);
     const cents = baseCents + (number === n ? remainderCents : 0);
-    return { number, dueDate, amount: cents / 100, paid: false, paidAt: null };
+    return { number, dueDate, amount: centsToAmount(cents), paid: false, paidAt: null };
   });
 }

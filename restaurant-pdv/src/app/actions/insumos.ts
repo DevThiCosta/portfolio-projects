@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/dal";
 import { flashSuccess } from "@/lib/flash";
+import { applyInsumoMovement } from "@/lib/stock";
 
 const InsumoSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto"),
@@ -69,20 +70,12 @@ export async function adjustInsumoStock(
     return { error: parsed.error.issues[0].message };
   }
 
-  await prisma.$transaction([
-    prisma.insumoMovement.create({
-      data: {
-        insumoId: parsed.data.insumoId,
-        delta: parsed.data.delta,
-        reason: parsed.data.reason,
-        createdByUserId: session.userId,
-      },
-    }),
-    prisma.insumo.update({
-      where: { id: parsed.data.insumoId },
-      data: { stock: { increment: parsed.data.delta } },
-    }),
-  ]);
+  await prisma.$transaction((tx) =>
+    applyInsumoMovement(tx, parsed.data.insumoId, parsed.data.delta, {
+      reason: parsed.data.reason,
+      createdByUserId: session.userId,
+    })
+  );
 
   revalidatePath("/admin/insumos");
 }

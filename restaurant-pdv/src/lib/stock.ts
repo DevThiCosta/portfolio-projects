@@ -168,9 +168,8 @@ export async function releaseStock(
 
 /**
  * Entrada ou saída avulsa de insumo fora do fluxo de venda — usada por
- * compras (delta positivo, reposição automática) e pelo estorno de uma
- * compra cancelada (delta negativo). Mesmo padrão update+create de
- * `adjustInsumoStock` em app/actions/insumos.ts, só que reutilizável.
+ * compras (delta positivo, reposição automática), pelo estorno de uma compra
+ * cancelada (delta negativo) e pelo ajuste manual de estoque no admin.
  */
 export async function applyInsumoMovement(
   tx: Prisma.TransactionClient,
