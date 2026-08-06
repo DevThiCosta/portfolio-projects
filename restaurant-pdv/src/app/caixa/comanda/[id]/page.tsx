@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getComandaTotal } from "@/app/actions/payments";
 import { BR_TIME_ZONE } from "@/lib/timezone";
+import { CashGlyph, PixGlyph, CardGlyph } from "@/components/payment-glyphs";
 import { CashPaymentForm } from "./cash-payment-form";
 
 const METHOD_LABEL: Record<string, string> = {
@@ -140,9 +141,10 @@ export default async function CaixaComandaPage({
       <div className="space-y-3">
         <p className="text-sm font-medium text-neutral-300">Fechar comanda</p>
 
-        <details className="rounded-lg border border-neutral-800 p-3 open:bg-neutral-900">
-          <summary className="cursor-pointer text-sm font-medium">
-            💵 Dinheiro
+        <details className="group rounded-lg border border-neutral-800 p-3 transition-colors open:bg-neutral-900">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+            <CashGlyph className="size-4.5 text-neutral-400 group-open:text-accent" />
+            Dinheiro
           </summary>
           <div className="mt-3">
             <CashPaymentForm comandaId={comanda.id} total={amountDue} />
@@ -151,16 +153,18 @@ export default async function CaixaComandaPage({
 
         <Link
           href={`/caixa/comanda/${comanda.id}/pix`}
-          className="block rounded-lg border border-neutral-800 p-3 text-sm font-medium hover:border-neutral-600"
+          className="flex items-center gap-2 rounded-lg border border-neutral-800 p-3 text-sm font-medium transition-colors hover:border-neutral-600"
         >
-          📱 Pix
+          <PixGlyph className="size-4.5 text-neutral-400" />
+          Pix
         </Link>
 
         <Link
           href={`/caixa/comanda/${comanda.id}/cartao`}
-          className="block rounded-lg border border-neutral-800 p-3 text-sm font-medium hover:border-neutral-600"
+          className="flex items-center gap-2 rounded-lg border border-neutral-800 p-3 text-sm font-medium transition-colors hover:border-neutral-600"
         >
-          💳 Cartão (terminal)
+          <CardGlyph className="size-4.5 text-neutral-400" />
+          Cartão (terminal)
         </Link>
       </div>
     </div>

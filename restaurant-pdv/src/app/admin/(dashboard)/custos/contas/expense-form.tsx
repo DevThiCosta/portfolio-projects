@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import type { ExpenseFormState } from "@/app/actions/expenses";
+import { TextField, SelectField } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 const PAYMENT_TERM_LABEL: Record<string, string> = {
   AVISTA: "À vista",
@@ -43,24 +45,14 @@ export function ExpenseForm({
   return (
     <form action={formAction} className="max-w-md space-y-4">
       {!isEdit && (
-        <div>
-          <label className="mb-1 block text-xs text-neutral-400" htmlFor="kind">
-            Tipo de conta
-          </label>
-          <select
-            id="kind"
-            name="kind"
-            defaultValue={initial?.kind ?? "FIXA"}
-            className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-          >
-            <option value="FIXA">Fixa (aluguel, internet, hospedagem…)</option>
-            <option value="VARIAVEL">Variável (energia, água…)</option>
-          </select>
-        </div>
+        <SelectField label="Tipo de conta" name="kind" defaultValue={initial?.kind ?? "FIXA"}>
+          <option value="FIXA">Fixa (aluguel, internet, hospedagem…)</option>
+          <option value="VARIAVEL">Variável (energia, água…)</option>
+        </SelectField>
       )}
 
-      <Field label="Descrição" name="description" defaultValue={initial?.description} required />
-      <Field
+      <TextField label="Descrição" name="description" defaultValue={initial?.description} required />
+      <TextField
         label="Categoria"
         name="category"
         defaultValue={initial?.category}
@@ -68,34 +60,24 @@ export function ExpenseForm({
         placeholder="Aluguel, Energia, Internet, Hospedagem…"
       />
 
-      <div>
-        <label className="mb-1 block text-xs text-neutral-400" htmlFor="supplierId">
-          Fornecedor (opcional)
-        </label>
-        <select
-          id="supplierId"
-          name="supplierId"
-          defaultValue={initial?.supplierId ?? ""}
-          className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-        >
-          <option value="">Nenhum</option>
-          {suppliers.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField label="Fornecedor (opcional)" name="supplierId" defaultValue={initial?.supplierId ?? ""}>
+        <option value="">Nenhum</option>
+        {suppliers.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </SelectField>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field
+        <TextField
           label="Mês de referência"
           name="competencia"
           type="month"
           defaultValue={initial?.competencia}
           required
         />
-        <Field
+        <TextField
           label="Data de emissão"
           name="issuedAt"
           type="date"
@@ -111,7 +93,7 @@ export function ExpenseForm({
             Já existe parcela paga — para alterar valor/parcelamento, cancele esta conta e lance uma nova.
           </p>
         )}
-        <Field
+        <TextField
           label="Valor total (R$)"
           name="amount"
           type="number"
@@ -121,28 +103,22 @@ export function ExpenseForm({
           required={!locked}
           disabled={locked}
         />
-        <div>
-          <label className="mb-1 block text-xs text-neutral-400" htmlFor="paymentTerm">
-            Forma de pagamento
-          </label>
-          <select
-            id="paymentTerm"
-            name="paymentTerm"
-            defaultValue={paymentTerm}
-            disabled={locked}
-            onChange={(e) => setPaymentTerm(e.target.value)}
-            className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400 disabled:opacity-50"
-          >
-            {Object.entries(PAYMENT_TERM_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          label="Forma de pagamento"
+          name="paymentTerm"
+          defaultValue={paymentTerm}
+          disabled={locked}
+          onChange={(e) => setPaymentTerm(e.target.value)}
+        >
+          {Object.entries(PAYMENT_TERM_LABEL).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </SelectField>
 
         {paymentTerm !== "AVISTA" && (
-          <Field
+          <TextField
             label="Data de vencimento"
             name="firstDueDate"
             type="date"
@@ -154,7 +130,7 @@ export function ExpenseForm({
 
         {paymentTerm === "PRAZO_PARCELADO" && (
           <div className="grid grid-cols-2 gap-3">
-            <Field
+            <TextField
               label="Nº de parcelas"
               name="installmentsCount"
               type="number"
@@ -162,7 +138,7 @@ export function ExpenseForm({
               defaultValue={initial?.installmentsCount ?? 2}
               disabled={locked}
             />
-            <Field
+            <TextField
               label="Intervalo (dias)"
               name="installmentIntervalDays"
               type="number"
@@ -174,59 +150,13 @@ export function ExpenseForm({
         )}
       </div>
 
-      <Field label="Observações" name="notes" defaultValue={initial?.notes ?? undefined} />
+      <TextField label="Observações" name="notes" defaultValue={initial?.notes ?? undefined} />
 
       {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? "Salvando…" : submitLabel}
-      </button>
+      </Button>
     </form>
-  );
-}
-
-function Field({
-  label,
-  name,
-  type = "text",
-  defaultValue,
-  required,
-  placeholder,
-  step,
-  min,
-  disabled,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  defaultValue?: string | number;
-  required?: boolean;
-  placeholder?: string;
-  step?: string;
-  min?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs text-neutral-400" htmlFor={name}>
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        step={step}
-        min={min}
-        required={required}
-        disabled={disabled}
-        placeholder={placeholder}
-        defaultValue={defaultValue}
-        className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400 disabled:opacity-50"
-      />
-    </div>
   );
 }

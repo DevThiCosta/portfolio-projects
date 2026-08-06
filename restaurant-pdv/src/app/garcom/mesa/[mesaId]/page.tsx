@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { openComandaFormAction, sendToKitchen } from "@/app/actions/comandas";
 import { computeAvailability } from "@/lib/stock";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { AddItemPicker } from "./add-item-picker";
 import { ComandaItemsList } from "./comanda-items-list";
 import { SendToKitchenButton } from "./send-to-kitchen-button";
@@ -37,12 +38,7 @@ export default async function MesaComandaPage({
         <h1 className="font-display text-xl uppercase tracking-wide text-neutral-50">{mesa.label}</h1>
         <p className="text-sm text-neutral-400">Mesa livre, sem comanda aberta.</p>
         <form action={openComandaForMesa}>
-          <button
-            type="submit"
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
-          >
-            Abrir comanda
-          </button>
+          <SubmitButton pendingLabel="Abrindo…">Abrir comanda</SubmitButton>
         </form>
       </div>
     );

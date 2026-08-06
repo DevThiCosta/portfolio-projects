@@ -2,6 +2,8 @@
 
 import { useActionState, useTransition } from "react";
 import { removeIngredient, type IngredientFormState } from "@/app/actions/insumos";
+import { TextField, SelectField } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 type IngredientRow = {
   id: string;
@@ -54,43 +56,25 @@ export function RecipeEditor({
         </p>
       ) : (
         <form action={formAction} className="flex flex-wrap items-end gap-2">
-          <div>
-            <label className="mb-1 block text-xs text-neutral-400" htmlFor="insumoId">
-              Insumo
-            </label>
-            <select
-              id="insumoId"
-              name="insumoId"
-              className="rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-            >
-              {availableInsumos.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.name} ({i.unit})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-neutral-400" htmlFor="quantityPerUnit">
-              Quantidade por unidade vendida
-            </label>
-            <input
-              id="quantityPerUnit"
-              name="quantityPerUnit"
-              type="number"
-              step="0.001"
-              min="0"
-              required
-              className="w-40 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-lg bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
-          >
-            Adicionar
-          </button>
+          <SelectField label="Insumo" name="insumoId">
+            {availableInsumos.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.name} ({i.unit})
+              </option>
+            ))}
+          </SelectField>
+          <TextField
+            label="Quantidade por unidade vendida"
+            name="quantityPerUnit"
+            type="number"
+            step="0.001"
+            min="0"
+            required
+            fullWidth={false} className="w-40"
+          />
+          <Button type="submit" disabled={pending}>
+            {pending ? "Adicionando…" : "Adicionar"}
+          </Button>
         </form>
       )}
       {state?.error && <p className="text-sm text-red-400">{state.error}</p>}

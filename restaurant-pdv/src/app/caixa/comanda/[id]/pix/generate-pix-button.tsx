@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
 
 export function GeneratePixButton({ action }: { action: () => Promise<void> }) {
   const [pending, startTransition] = useTransition();
@@ -8,7 +9,9 @@ export function GeneratePixButton({ action }: { action: () => Promise<void> }) {
 
   return (
     <div className="space-y-2">
-      <button
+      <Button
+        variant="success"
+        fullWidth
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -20,10 +23,9 @@ export function GeneratePixButton({ action }: { action: () => Promise<void> }) {
             }
           })
         }
-        className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
       >
         {pending ? "Gerando…" : "Gerar cobrança Pix"}
-      </button>
+      </Button>
       {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );

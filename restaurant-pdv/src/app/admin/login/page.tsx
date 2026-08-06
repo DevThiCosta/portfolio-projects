@@ -3,6 +3,9 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { loginAdmin, type AdminLoginState } from "@/app/actions/auth";
+import { TextField } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { TicketGlyph } from "@/components/ticket-glyph";
 
 export default function AdminLoginPage() {
   const [state, formAction, pending] = useActionState<
@@ -14,8 +17,12 @@ export default function AdminLoginPage() {
     <main className="flex min-h-dvh flex-col items-center justify-center bg-neutral-950 px-4 text-neutral-50">
       <form
         action={formAction}
-        className="w-full max-w-sm rounded-xl border border-neutral-800 bg-neutral-900 p-6"
+        className="card-perforated w-full max-w-sm rounded-xl border border-neutral-800 bg-neutral-900 p-6 shadow-lg shadow-black/20"
       >
+        <span className="mb-4 flex items-center gap-1.5 font-display text-sm uppercase tracking-wide text-accent">
+          <TicketGlyph className="size-4" />
+          Bar POS
+        </span>
         <h1 className="mb-1 font-display text-2xl uppercase tracking-wide text-neutral-50">
           Administração
         </h1>
@@ -23,38 +30,25 @@ export default function AdminLoginPage() {
           Acesso restrito ao dono/gerente do bar
         </p>
 
-        <label className="mb-1 block text-xs text-neutral-400" htmlFor="username">
-          Usuário
-        </label>
-        <input
-          id="username"
-          name="username"
-          autoComplete="username"
-          className="mb-4 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-        />
-
-        <label className="mb-1 block text-xs text-neutral-400" htmlFor="password">
-          Senha
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          className="mb-4 w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-        />
+        <div className="mb-4">
+          <TextField label="Usuário" name="username" autoComplete="username" />
+        </div>
+        <div className="mb-4">
+          <TextField
+            label="Senha"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+          />
+        </div>
 
         {state?.error && (
           <p className="mb-4 text-sm text-red-400">{state.error}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-lg bg-accent py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-hover disabled:opacity-50"
-        >
+        <Button type="submit" fullWidth disabled={pending}>
           {pending ? "Entrando…" : "Entrar"}
-        </button>
+        </Button>
 
         <div className="mt-4 text-center">
           <Link

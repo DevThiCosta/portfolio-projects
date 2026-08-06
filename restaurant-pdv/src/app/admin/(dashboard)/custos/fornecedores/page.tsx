@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { ToggleSupplierButton } from "./toggle-supplier-button";
+import { toggleSupplierActive } from "@/app/actions/suppliers";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
 
 const KIND_LABEL: Record<string, string> = {
   INSUMO: "Insumo",
@@ -43,7 +44,10 @@ export default async function FornecedoresPage() {
               >
                 editar
               </Link>
-              <ToggleSupplierButton supplierId={s.id} active={s.active} />
+              <ToggleActiveButton
+                state={s.active}
+                onToggle={toggleSupplierActive.bind(null, s.id, !s.active)}
+              />
             </div>
           </div>
         ))}

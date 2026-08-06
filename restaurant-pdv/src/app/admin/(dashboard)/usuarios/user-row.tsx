@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { toggleUserActive, resetUserPin, type ResetPinState } from "@/app/actions/users";
 import type { Role } from "@/generated/prisma/client";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
+import { Button } from "@/components/ui/button";
 
 export function UserRow({
   id,
@@ -15,7 +17,6 @@ export function UserRow({
   role: Role;
   active: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
   const [showReset, setShowReset] = useState(false);
   const resetAction = resetUserPin.bind(null, id);
   const [state, formAction, resetPending] = useActionState<ResetPinState, FormData>(
@@ -41,17 +42,7 @@ export function UserRow({
           >
             resetar PIN
           </button>
-          <button
-            disabled={pending}
-            onClick={() => startTransition(() => toggleUserActive(id, !active))}
-            className={`rounded-md border px-2 py-1 text-xs disabled:opacity-50 ${
-              active
-                ? "border-neutral-700 text-neutral-300 hover:bg-neutral-900"
-                : "border-emerald-700 text-emerald-400 hover:bg-emerald-950"
-            }`}
-          >
-            {active ? "desativar" : "ativar"}
-          </button>
+          <ToggleActiveButton state={active} onToggle={() => toggleUserActive(id, !active)} />
         </div>
       </div>
 
@@ -64,15 +55,11 @@ export function UserRow({
             maxLength={4}
             placeholder="Novo PIN (4 dígitos)"
             required
-            className="w-40 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm outline-none focus:border-neutral-400"
+            className="w-40 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-1.5 text-sm text-neutral-50 outline-none transition-colors focus:border-accent"
           />
-          <button
-            type="submit"
-            disabled={resetPending}
-            className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent-hover disabled:opacity-50"
-          >
-            Salvar
-          </button>
+          <Button type="submit" size="sm" disabled={resetPending}>
+            {resetPending ? "Salvando…" : "Salvar"}
+          </Button>
           {state?.error && <span className="text-xs text-red-400">{state.error}</span>}
           {state?.success && <span className="text-xs text-emerald-400">PIN atualizado</span>}
         </form>

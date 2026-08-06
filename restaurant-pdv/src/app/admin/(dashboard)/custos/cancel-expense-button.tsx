@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { cancelExpense } from "@/app/actions/expenses";
+import { Button } from "@/components/ui/button";
 
 export function CancelExpenseButton({ expenseId }: { expenseId: string }) {
   const [pending, startTransition] = useTransition();
@@ -9,7 +10,9 @@ export function CancelExpenseButton({ expenseId }: { expenseId: string }) {
 
   return (
     <div className="space-y-1">
-      <button
+      <Button
+        variant="danger"
+        size="sm"
         disabled={pending}
         onClick={() => {
           if (!confirm("Cancelar este lançamento? Se for uma compra de insumo, o estoque será estornado.")) {
@@ -20,10 +23,9 @@ export function CancelExpenseButton({ expenseId }: { expenseId: string }) {
             setError(result?.error ?? null);
           });
         }}
-        className="rounded-md border border-red-900 px-3 py-1.5 text-xs text-red-400 hover:bg-red-950 disabled:opacity-50"
       >
         {pending ? "Cancelando…" : "Cancelar"}
-      </button>
+      </Button>
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );

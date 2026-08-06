@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { closeComandaWithCash, type CashPaymentState } from "@/app/actions/payments";
+import { TextField } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 
 export function CashPaymentForm({
   comandaId,
@@ -22,21 +24,15 @@ export function CashPaymentForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="comandaId" value={comandaId} />
-      <div>
-        <label className="mb-1 block text-xs text-neutral-400" htmlFor="amountReceived">
-          Valor recebido (R$)
-        </label>
-        <input
-          id="amountReceived"
-          name="amountReceived"
-          type="number"
-          step="0.01"
-          min="0"
-          value={amountReceived}
-          onChange={(e) => setAmountReceived(e.target.value)}
-          className="w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-400"
-        />
-      </div>
+      <TextField
+        label="Valor recebido (R$)"
+        name="amountReceived"
+        type="number"
+        step="0.01"
+        min="0"
+        value={amountReceived}
+        onChange={(e) => setAmountReceived(e.target.value)}
+      />
 
       <p className="text-sm text-neutral-400">
         Troco:{" "}
@@ -47,13 +43,9 @@ export function CashPaymentForm({
 
       {state?.error && <p className="text-sm text-red-400">{state.error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending || troco < 0}
-        className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-neutral-800 disabled:text-neutral-500"
-      >
+      <Button type="submit" variant="success" size="lg" fullWidth disabled={pending || troco < 0}>
         {pending ? "Fechando…" : "Confirmar pagamento em dinheiro"}
-      </button>
+      </Button>
     </form>
   );
 }

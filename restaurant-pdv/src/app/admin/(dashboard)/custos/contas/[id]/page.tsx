@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { updateExpense } from "@/app/actions/expenses";
+import { updateExpense, toggleInstallmentPaid } from "@/app/actions/expenses";
 import { BR_TIME_ZONE } from "@/lib/timezone";
 import { ExpenseForm } from "../expense-form";
-import { ToggleInstallmentButton } from "../toggle-installment-button";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
 import { DuplicateButton } from "../duplicate-button";
 import { CancelExpenseButton } from "../../cancel-expense-button";
 
@@ -94,7 +94,12 @@ export default async function EditarContaPage({
                     ` · pago em ${inst.paidAt.toLocaleDateString("pt-BR", { timeZone: BR_TIME_ZONE })}`}
                 </p>
               </div>
-              <ToggleInstallmentButton installmentId={inst.id} paid={inst.paid} />
+              <ToggleActiveButton
+                state={inst.paid}
+                onToggle={toggleInstallmentPaid.bind(null, inst.id, !inst.paid)}
+                onLabel="Marcar como paga"
+                offLabel="Desfazer pagamento"
+              />
             </div>
           ))}
         </div>

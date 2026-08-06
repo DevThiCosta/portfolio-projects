@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { ToggleActiveButton } from "./toggle-active-button";
+import { toggleProductActive } from "@/app/actions/products";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
 
 export default async function ProdutosPage() {
   const products = await prisma.product.findMany({
@@ -59,7 +60,10 @@ export default async function ProdutosPage() {
                   >
                     editar
                   </Link>
-                  <ToggleActiveButton productId={p.id} active={p.active} />
+                  <ToggleActiveButton
+                    state={p.active}
+                    onToggle={toggleProductActive.bind(null, p.id, !p.active)}
+                  />
                 </div>
               </div>
             ))}

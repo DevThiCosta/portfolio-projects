@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { unstable_rethrow } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export function ConfirmCardButton({ action }: { action: () => Promise<void> }) {
   const [pending, startTransition] = useTransition();
@@ -9,7 +10,10 @@ export function ConfirmCardButton({ action }: { action: () => Promise<void> }) {
 
   return (
     <div className="space-y-2">
-      <button
+      <Button
+        variant="success"
+        size="lg"
+        fullWidth
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -24,10 +28,9 @@ export function ConfirmCardButton({ action }: { action: () => Promise<void> }) {
             }
           })
         }
-        className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
       >
         {pending ? "Confirmando…" : "Terminal aprovou — confirmar pagamento"}
-      </button>
+      </Button>
       {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );

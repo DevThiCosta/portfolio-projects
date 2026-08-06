@@ -18,9 +18,9 @@ export function StaffNav({ nav }: { nav: { href: string; label: string }[] }) {
           <Link
             key={item.href}
             href={item.href}
-            className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors ${
+            className={`shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors ${
               active
-                ? "bg-accent/15 text-accent"
+                ? "bg-accent/15 font-medium text-accent"
                 : "text-neutral-400 hover:bg-neutral-900 hover:text-neutral-100"
             }`}
           >

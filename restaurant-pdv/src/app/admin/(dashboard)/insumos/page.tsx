@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { createInsumo, adjustInsumoStock } from "@/app/actions/insumos";
+import { createInsumo, adjustInsumoStock, toggleInsumoActive } from "@/app/actions/insumos";
 import { NewInsumoForm } from "./new-insumo-form";
 import { AdjustInsumoForm } from "./adjust-insumo-form";
-import { ToggleInsumoButton } from "./toggle-insumo-button";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
 import { WarnGlyph } from "@/components/warn-glyph";
 
 export default async function InsumosPage() {
@@ -49,7 +49,10 @@ export default async function InsumosPage() {
                       {low && <WarnGlyph className="size-3" />}
                     </p>
                   </div>
-                  <ToggleInsumoButton insumoId={i.id} active={i.active} />
+                  <ToggleActiveButton
+                    state={i.active}
+                    onToggle={toggleInsumoActive.bind(null, i.id, !i.active)}
+                  />
                 </div>
               );
             })}

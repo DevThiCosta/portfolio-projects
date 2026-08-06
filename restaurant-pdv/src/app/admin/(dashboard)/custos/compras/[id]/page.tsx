@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BR_TIME_ZONE } from "@/lib/timezone";
-import { ToggleInstallmentButton } from "../../contas/toggle-installment-button";
+import { toggleInstallmentPaid } from "@/app/actions/expenses";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
 import { CancelExpenseButton } from "../../cancel-expense-button";
 
 const PAYMENT_TERM_LABEL: Record<string, string> = {
@@ -87,7 +88,12 @@ export default async function DetalheCompraPage({
                     ` · pago em ${inst.paidAt.toLocaleDateString("pt-BR", { timeZone: BR_TIME_ZONE })}`}
                 </p>
               </div>
-              <ToggleInstallmentButton installmentId={inst.id} paid={inst.paid} />
+              <ToggleActiveButton
+                state={inst.paid}
+                onToggle={toggleInstallmentPaid.bind(null, inst.id, !inst.paid)}
+                onLabel="Marcar como paga"
+                offLabel="Desfazer pagamento"
+              />
             </div>
           ))}
         </div>

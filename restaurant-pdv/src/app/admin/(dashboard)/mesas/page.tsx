@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { createMesa } from "@/app/actions/mesas";
+import { createMesa, toggleMesaActive } from "@/app/actions/mesas";
 import { NewMesaForm } from "./new-mesa-form";
-import { ToggleMesaButton } from "./toggle-mesa-button";
+import { ToggleActiveButton } from "@/components/ui/toggle-active-button";
 
 export default async function MesasPage() {
   const mesas = await prisma.mesa.findMany({
@@ -37,7 +37,11 @@ export default async function MesasPage() {
               <p className="mb-2 text-xs text-neutral-500">
                 {!mesa.active ? "inativa" : ocupada ? "ocupada" : "livre"}
               </p>
-              <ToggleMesaButton mesaId={mesa.id} active={mesa.active} />
+              <ToggleActiveButton
+                state={mesa.active}
+                onToggle={toggleMesaActive.bind(null, mesa.id, !mesa.active)}
+                className="w-full"
+              />
             </div>
           );
         })}

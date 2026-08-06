@@ -23,7 +23,7 @@ export function StaffHeader({
             {name} · {roleLabel}
           </span>
           <form action={logout} className="shrink-0">
-            <button className="rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:bg-neutral-900">
+            <button className="rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 transition-colors hover:border-neutral-600 hover:bg-neutral-900 active:scale-[0.98]">
               Sair
             </button>
           </form>
