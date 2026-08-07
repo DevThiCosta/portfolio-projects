@@ -107,10 +107,7 @@ export async function updateExpense(
 ): Promise<ExpenseFormState> {
   await requireRole(["ADMIN"], "/admin/login");
 
-  const existing = await prisma.expense.findUniqueOrThrow({
-    where: { id: expenseId },
-    include: { installments: true },
-  });
+  const existing = await prisma.expense.findUniqueOrThrow({ where: { id: expenseId } });
   if (existing.kind === "COMPRA_INSUMO" || existing.kind === "COMPRA_SERVICO") {
     return { error: "Compras não podem ser editadas — cancele e lance novamente." };
   }
@@ -126,17 +123,11 @@ export async function updateExpense(
     return { error: identity.error.issues[0].message };
   }
 
-  const hasPaid = existing.installments.some((i) => i.paid);
   const financialFieldsSent = formData.get("amount") !== null;
 
-  if (hasPaid && financialFieldsSent) {
-    return {
-      error: "Já existe parcela paga — cancele esta conta e lance uma nova para alterar o valor.",
-    };
-  }
-
-  if (!hasPaid && financialFieldsSent) {
-    const financial = FinancialSchema.safeParse({
+  let financial: z.infer<typeof FinancialSchema> | null = null;
+  if (financialFieldsSent) {
+    const parsedFinancial = FinancialSchema.safeParse({
       amount: formData.get("amount"),
       paymentTerm: formData.get("paymentTerm"),
       installmentsCount: formData.get("installmentsCount") || 1,
@@ -144,55 +135,77 @@ export async function updateExpense(
       issuedAt: formData.get("issuedAt"),
       firstDueDate: formData.get("firstDueDate") || undefined,
     });
-    if (!financial.success) {
-      return { error: financial.error.issues[0].message };
+    if (!parsedFinancial.success) {
+      return { error: parsedFinancial.error.issues[0].message };
     }
-    const data = financial.data;
-    if (data.paymentTerm !== "AVISTA" && !data.firstDueDate) {
+    financial = parsedFinancial.data;
+    if (financial.paymentTerm !== "AVISTA" && !financial.firstDueDate) {
       return { error: "Informe a data de vencimento" };
     }
+  }
 
-    const issuedAt = brazilDateFromLabel(data.issuedAt);
-    const firstDueDate = data.firstDueDate ? brazilDateFromLabel(data.firstDueDate) : undefined;
-    const installments = computeInstallments({
-      paymentTerm: data.paymentTerm,
-      amount: data.amount,
-      installmentsCount: data.installmentsCount,
-      intervalDays: data.installmentIntervalDays,
-      firstDueDate,
-      issuedAt,
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      // hasPaid é checado AQUI DENTRO, não antes da transação — uma parcela
+      // pode ter sido marcada como paga (toggleInstallmentPaid, ação
+      // separada) entre o carregamento da tela e este submit. Checar fora
+      // da transação deixaria essa corrida apagar um registro de pagamento
+      // real via o deleteMany abaixo.
+      const installmentsNow = await tx.expenseInstallment.findMany({ where: { expenseId } });
+      const hasPaid = installmentsNow.some((i) => i.paid);
 
-    await prisma.$transaction([
-      prisma.expenseInstallment.deleteMany({ where: { expenseId } }),
-      prisma.expense.update({
-        where: { id: expenseId },
-        data: {
-          description: identity.data.description,
-          category: identity.data.category,
-          supplierId: identity.data.supplierId || null,
-          competencia: brazilMonthStartFromLabel(identity.data.competencia),
-          notes: identity.data.notes || null,
-          amount: data.amount,
-          paymentTerm: data.paymentTerm,
-          installmentsCount: installments.length,
-          installmentIntervalDays: data.installmentIntervalDays,
+      if (hasPaid && financial) {
+        throw new Error(
+          "Já existe parcela paga — cancele esta conta e lance uma nova para alterar o valor."
+        );
+      }
+
+      if (!hasPaid && financial) {
+        const issuedAt = brazilDateFromLabel(financial.issuedAt);
+        const firstDueDate = financial.firstDueDate
+          ? brazilDateFromLabel(financial.firstDueDate)
+          : undefined;
+        const installments = computeInstallments({
+          paymentTerm: financial.paymentTerm,
+          amount: financial.amount,
+          installmentsCount: financial.installmentsCount,
+          intervalDays: financial.installmentIntervalDays,
+          firstDueDate,
           issuedAt,
-          installments: { create: installments },
-        },
-      }),
-    ]);
-  } else {
-    await prisma.expense.update({
-      where: { id: expenseId },
-      data: {
-        description: identity.data.description,
-        category: identity.data.category,
-        supplierId: identity.data.supplierId || null,
-        competencia: brazilMonthStartFromLabel(identity.data.competencia),
-        notes: identity.data.notes || null,
-      },
+        });
+
+        await tx.expenseInstallment.deleteMany({ where: { expenseId } });
+        await tx.expense.update({
+          where: { id: expenseId },
+          data: {
+            description: identity.data.description,
+            category: identity.data.category,
+            supplierId: identity.data.supplierId || null,
+            competencia: brazilMonthStartFromLabel(identity.data.competencia),
+            notes: identity.data.notes || null,
+            amount: financial.amount,
+            paymentTerm: financial.paymentTerm,
+            installmentsCount: installments.length,
+            installmentIntervalDays: financial.installmentIntervalDays,
+            issuedAt,
+            installments: { create: installments },
+          },
+        });
+      } else {
+        await tx.expense.update({
+          where: { id: expenseId },
+          data: {
+            description: identity.data.description,
+            category: identity.data.category,
+            supplierId: identity.data.supplierId || null,
+            competencia: brazilMonthStartFromLabel(identity.data.competencia),
+            notes: identity.data.notes || null,
+          },
+        });
+      }
     });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Erro ao atualizar conta." };
   }
 
   revalidatePath("/admin/custos/contas");
